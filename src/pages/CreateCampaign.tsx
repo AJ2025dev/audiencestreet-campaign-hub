@@ -52,6 +52,26 @@ const CreateCampaign = () => {
     }
   })
 
+  // DSP & SSP Selection State
+  const [selectedDSPs, setSelectedDSPs] = useState<string[]>(["The Trade Desk", "Amazon DSP", "Verizon Media DSP"])
+  const [selectedSSPs, setSelectedSSPs] = useState<string[]>(["Google Ad Manager", "Amazon Publisher Services", "PubMatic"])
+
+  const handleDSPToggle = (dspName: string) => {
+    setSelectedDSPs(prev => 
+      prev.includes(dspName) 
+        ? prev.filter(name => name !== dspName)
+        : [...prev, dspName]
+    )
+  }
+
+  const handleSSPToggle = (sspName: string) => {
+    setSelectedSSPs(prev => 
+      prev.includes(sspName) 
+        ? prev.filter(name => name !== sspName)
+        : [...prev, sspName]
+    )
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -414,23 +434,35 @@ const CreateCampaign = () => {
                 <h4 className="font-medium text-foreground">Demand Side Platforms (DSP)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { name: "The Trade Desk", type: "Premium DSP", connected: true },
-                    { name: "Amazon DSP", type: "Retail Media", connected: true },
-                    { name: "Google DV360", type: "Video & Display", connected: false },
-                    { name: "Adobe Advertising Cloud", type: "Cross-Channel", connected: false },
-                    { name: "Verizon Media DSP", type: "Native & Video", connected: true },
-                    { name: "Samsung DSP", type: "CTV & Mobile", connected: false }
-                  ].map((dsp) => (
-                    <div key={dsp.name} className={`p-4 border rounded-lg ${dsp.connected ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h5 className="font-medium text-foreground">{dsp.name}</h5>
-                          <p className="text-sm text-muted-foreground">{dsp.type}</p>
+                    { name: "The Trade Desk", type: "Premium DSP" },
+                    { name: "Amazon DSP", type: "Retail Media" },
+                    { name: "Google DV360", type: "Video & Display" },
+                    { name: "Adobe Advertising Cloud", type: "Cross-Channel" },
+                    { name: "Verizon Media DSP", type: "Native & Video" },
+                    { name: "Samsung DSP", type: "CTV & Mobile" }
+                  ].map((dsp) => {
+                    const isSelected = selectedDSPs.includes(dsp.name)
+                    return (
+                      <div 
+                        key={dsp.name} 
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                          isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => handleDSPToggle(dsp.name)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h5 className="font-medium text-foreground">{dsp.name}</h5>
+                            <p className="text-sm text-muted-foreground">{dsp.type}</p>
+                          </div>
+                          <Checkbox 
+                            checked={isSelected}
+                            onChange={() => handleDSPToggle(dsp.name)}
+                          />
                         </div>
-                        <Checkbox checked={dsp.connected} />
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
@@ -438,23 +470,35 @@ const CreateCampaign = () => {
                 <h4 className="font-medium text-foreground">Supply Side Platforms (SSP)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { name: "Google Ad Manager", type: "Premium Inventory", connected: true },
-                    { name: "PubMatic", type: "Header Bidding", connected: true },
-                    { name: "Rubicon Project", type: "Real-time Bidding", connected: false },
-                    { name: "AppNexus/Xandr", type: "Programmatic", connected: true },
-                    { name: "OpenX", type: "Video & Mobile", connected: false },
-                    { name: "Index Exchange", type: "Header Bidding", connected: false }
-                  ].map((ssp) => (
-                    <div key={ssp.name} className={`p-4 border rounded-lg ${ssp.connected ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h5 className="font-medium text-foreground">{ssp.name}</h5>
-                          <p className="text-sm text-muted-foreground">{ssp.type}</p>
+                    { name: "Google Ad Manager", type: "Premium Inventory" },
+                    { name: "PubMatic", type: "Header Bidding" },
+                    { name: "Rubicon Project", type: "Real-time Bidding" },
+                    { name: "AppNexus/Xandr", type: "Programmatic" },
+                    { name: "OpenX", type: "Video & Mobile" },
+                    { name: "Index Exchange", type: "Header Bidding" }
+                  ].map((ssp) => {
+                    const isSelected = selectedSSPs.includes(ssp.name)
+                    return (
+                      <div 
+                        key={ssp.name} 
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                          isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => handleSSPToggle(ssp.name)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h5 className="font-medium text-foreground">{ssp.name}</h5>
+                            <p className="text-sm text-muted-foreground">{ssp.type}</p>
+                          </div>
+                          <Checkbox 
+                            checked={isSelected}
+                            onChange={() => handleSSPToggle(ssp.name)}
+                          />
                         </div>
-                        <Checkbox checked={ssp.connected} />
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
