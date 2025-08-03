@@ -39,7 +39,7 @@ const performanceData = [
 const campaignData = [
   {
     id: 1,
-    name: "Q1 Brand Awareness",
+    name: "P&G Gillete",
     status: "active",
     impressions: "1.2M",
     clicks: "24.5K",
@@ -49,7 +49,7 @@ const campaignData = [
   },
   {
     id: 2,
-    name: "Holiday Retargeting",
+    name: "Apex Girl",
     status: "paused",
     impressions: "890K",
     clicks: "18.2K",
@@ -59,7 +59,7 @@ const campaignData = [
   },
   {
     id: 3,
-    name: "Mobile App Install",
+    name: "Jio Retail",
     status: "active",
     impressions: "2.1M",
     clicks: "45.6K",

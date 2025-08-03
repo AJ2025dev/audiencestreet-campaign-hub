@@ -24,7 +24,7 @@ import { useNavigate } from "react-router-dom"
 const campaignsData = [
   {
     id: 1,
-    name: "Q1 Brand Awareness Campaign",
+    name: "P&G Gillete",
     status: "active",
     budget: "$10,000",
     spent: "$8,450",
@@ -38,7 +38,7 @@ const campaignsData = [
   },
   {
     id: 2,
-    name: "Holiday Retargeting Campaign",
+    name: "Apex Girl",
     status: "paused",
     budget: "$7,500",
     spent: "$6,230",
@@ -52,7 +52,7 @@ const campaignsData = [
   },
   {
     id: 3,
-    name: "Mobile App Install Campaign",
+    name: "Jio Retail",
     status: "active",
     budget: "$15,000",
     spent: "$12,890",
