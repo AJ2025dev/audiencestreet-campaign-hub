@@ -52,6 +52,15 @@ const CreateCampaign = () => {
     }
   })
 
+  // AI Strategy state
+  const [aiPromptData, setAiPromptData] = useState({
+    brandDescription: "",
+    campaignObjective: "",
+    landingPage: ""
+  })
+  const [generatedStrategy, setGeneratedStrategy] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
+
   // DSP & SSP Selection State
   const [selectedDSPs, setSelectedDSPs] = useState<string[]>(["The Trade Desk", "Amazon DSP", "Verizon Media DSP"])
   const [selectedSSPs, setSelectedSSPs] = useState<string[]>(["Google Ad Manager", "Amazon Publisher Services", "PubMatic"])
@@ -70,6 +79,36 @@ const CreateCampaign = () => {
         ? prev.filter(name => name !== sspName)
         : [...prev, sspName]
     )
+  }
+
+  const generateCampaignStrategy = async () => {
+    if (!aiPromptData.brandDescription || !aiPromptData.campaignObjective) {
+      alert("Please fill in both brand description and campaign objective")
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-campaign-strategy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(aiPromptData)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setGeneratedStrategy(data.strategy)
+      } else {
+        throw new Error('Failed to generate strategy')
+      }
+    } catch (error) {
+      console.error('Error generating strategy:', error)
+      alert('Failed to generate campaign strategy. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
@@ -137,13 +176,55 @@ const CreateCampaign = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="ai-prompt">AI Prompt</Label>
-                <Textarea 
-                  id="ai-prompt"
-                  placeholder="Describe your campaign goals and let AI optimize your strategy"
-                  rows={3}
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="brand-description">Brand/Product Description</Label>
+                  <Textarea 
+                    id="brand-description"
+                    placeholder="Describe your brand, product, or service. Include key features, target market, and unique selling points..."
+                    rows={3}
+                    value={aiPromptData.brandDescription}
+                    onChange={(e) => setAiPromptData(prev => ({ ...prev, brandDescription: e.target.value }))}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="campaign-objective-ai">Campaign Objective & Goals</Label>
+                  <Textarea 
+                    id="campaign-objective-ai"
+                    placeholder="What do you want to achieve with this campaign? (e.g., increase brand awareness, drive sales, generate leads, promote new product launch...)"
+                    rows={2}
+                    value={aiPromptData.campaignObjective}
+                    onChange={(e) => setAiPromptData(prev => ({ ...prev, campaignObjective: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="landing-page">Landing Page URL (Optional)</Label>
+                  <Input 
+                    id="landing-page"
+                    placeholder="https://example.com/landing-page"
+                    value={aiPromptData.landingPage}
+                    onChange={(e) => setAiPromptData(prev => ({ ...prev, landingPage: e.target.value }))}
+                  />
+                </div>
+
+                <Button 
+                  onClick={generateCampaignStrategy}
+                  disabled={isGenerating || !aiPromptData.brandDescription || !aiPromptData.campaignObjective}
+                  className="w-full"
+                >
+                  {isGenerating ? "Generating Strategy..." : "Generate AI Campaign Strategy"}
+                </Button>
+
+                {generatedStrategy && (
+                  <div className="space-y-2">
+                    <Label>Generated Campaign Strategy</Label>
+                    <div className="p-4 border rounded-lg bg-muted/50">
+                      <pre className="whitespace-pre-wrap text-sm">{generatedStrategy}</pre>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
