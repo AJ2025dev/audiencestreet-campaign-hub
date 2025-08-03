@@ -1,4 +1,6 @@
 import { useState, useRef } from "react"
+import { useToast } from "@/components/ui/use-toast"
+import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,6 +47,8 @@ const Creatives = () => {
     creativeBrief: ""
   })
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedCreatives, setGeneratedCreatives] = useState<any[]>([])
+  const { toast } = useToast()
 
   const handleFileUpload = (type: 'video' | 'display' | 'banner', files: FileList | null) => {
     if (!files) return
@@ -65,20 +69,45 @@ const Creatives = () => {
 
   const generateCreatives = async () => {
     if (!aiData.siteUrl && !aiData.creativeBrief) {
-      alert("Please provide either a site URL or creative brief")
-      return
+      toast({
+        title: "Missing Information",
+        description: "Please provide either a website URL or creative brief to generate creatives.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setIsGenerating(true)
+    setIsGenerating(true);
     try {
-      // Simulate AI generation - in production this would call an AI service
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      alert("AI creative generation coming soon! This will generate banners and videos for multiple environments.")
+      const { data, error } = await supabase.functions.invoke('generate-creatives', {
+        body: {
+          websiteUrl: aiData.siteUrl,
+          creativeBrief: aiData.creativeBrief,
+          environments: ["CTV/OTT", "Web Display", "Mobile In-App", "Social Media", "Digital Billboards"],
+          creativeTypes: ["Video Ads (15s, 30s)", "Display Banners", "Native Ads", "Rich Media", "Interactive Ads"]
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setGeneratedCreatives(data.creatives);
+        toast({
+          title: "Success!",
+          description: `Generated ${data.totalGenerated} creative assets`,
+        });
+      } else {
+        throw new Error(data.error);
+      }
     } catch (error) {
-      console.error('Error generating creatives:', error)
-      alert('Failed to generate creatives')
+      console.error('Error generating creatives:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate creatives. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
   }
 
@@ -192,6 +221,50 @@ const Creatives = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Generated Creatives Display */}
+              {generatedCreatives.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Generated Creatives</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {generatedCreatives.map((creative, index) => (
+                        <div key={index} className="border rounded-lg p-4 space-y-2">
+                          {creative.type === 'banner' && (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <h4 className="font-medium">{creative.size} Banner</h4>
+                                <span className="text-sm text-muted-foreground">{creative.dimensions}</span>
+                              </div>
+                              <img 
+                                src={creative.image} 
+                                alt={`Generated ${creative.size} banner`}
+                                className="w-full h-auto rounded border"
+                              />
+                              <Button size="sm" variant="outline" className="w-full">
+                                Download
+                              </Button>
+                            </>
+                          )}
+                          {creative.type === 'video' && (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <h4 className="font-medium">Video Concept</h4>
+                                <span className="text-sm text-muted-foreground">{creative.duration}</span>
+                              </div>
+                              <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
+                                {creative.storyboard}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="upload" className="space-y-6">
