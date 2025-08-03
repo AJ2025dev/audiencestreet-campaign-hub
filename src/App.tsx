@@ -7,6 +7,7 @@ import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
+import Creatives from "./pages/Creatives";
 import Audiences from "./pages/Audiences";
 import RetailMedia from "./pages/RetailMedia";
 import Reports from "./pages/Reports";
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/campaigns/create" element={<CreateCampaign />} />
+            <Route path="/creatives" element={<Creatives />} />
             <Route path="/audiences" element={<Audiences />} />
             <Route path="/retail-media" element={<RetailMedia />} />
             <Route path="/reports" element={<Reports />} />

@@ -39,7 +39,8 @@ serve(async (req) => {
       { name: "Google DV360", type: "Video & Display", bestFor: ["YouTube", "Display", "Video", "App Campaigns"] },
       { name: "Adobe Advertising Cloud", type: "Cross-Channel", bestFor: ["Omnichannel", "Cross-device", "Attribution"] },
       { name: "Verizon Media DSP", type: "Native & Video", bestFor: ["Native", "Video", "Mobile", "Yahoo Properties"] },
-      { name: "Samsung DSP", type: "CTV & Mobile", bestFor: ["Connected TV", "Smart TV", "Mobile", "Samsung Ecosystem"] }
+      { name: "Samsung DSP", type: "CTV & Mobile", bestFor: ["Connected TV", "Smart TV", "Mobile", "Samsung Ecosystem"] },
+      { name: "TAS Open Marketplace", type: "Open Exchange", bestFor: ["Cost-Effective", "Broad Reach", "Performance", "All Campaigns"] }
     ]
 
     const availableSSPs = [
@@ -82,7 +83,7 @@ Generate a strategy that includes:
 1. **Platform-Specific DSP/SSP Recommendations** - Only recommend from available options above
 2. **Environment Strategy** - Specify which environments (CTV/OTT, In-App, Web, PdOOH) to prioritize
 3. **Retail Media Integration** - Include relevant retail media segments and partners when applicable
-4. **Budget Allocation** - Distribute budget across recommended DSPs and environments
+4. **Budget Allocation** - ALWAYS allocate 25% of budget to TAS Open Marketplace, distribute remaining 75% across other recommended DSPs and environments
 5. **Bidding Strategy** - Choose from available bidding options
 6. **Creative Specifications** - Based on selected environments and formats
 7. **Audience Targeting** - Include behavioral segments and retail data when relevant
@@ -93,6 +94,11 @@ RETAIL MEDIA PRIORITIZATION:
 - For e-commerce, retail, shopping, or product-focused campaigns: Emphasize Amazon DSP and retail media segments
 - For brand awareness: Focus on premium DSPs and broad reach environments
 - For conversions: Prioritize performance-oriented DSPs and conversion-focused segments
+
+CRITICAL BUDGET REQUIREMENT:
+- ALWAYS allocate exactly 25% of total campaign budget to TAS Open Marketplace
+- This is mandatory for all campaign strategies regardless of campaign type or objective
+- TAS Open Marketplace provides cost-effective broad reach and should be positioned as foundational to campaign success
 
 Be specific, actionable, and ensure all recommendations are implementable within the platform.`
 

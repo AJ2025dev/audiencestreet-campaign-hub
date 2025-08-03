@@ -25,9 +25,6 @@ import {
   Smartphone,
   Tv,
   Radio,
-  Image,
-  Video,
-  Layout,
   Youtube,
   Leaf
 } from "lucide-react"
@@ -62,20 +59,9 @@ const CreateCampaign = () => {
   const [generatedStrategy, setGeneratedStrategy] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
 
-  // File upload refs
-  const videoFileRef = useRef<HTMLInputElement>(null)
-  const displayFileRef = useRef<HTMLInputElement>(null)
-  const bannerFileRef = useRef<HTMLInputElement>(null)
-
-  // Upload states
-  const [uploadedFiles, setUploadedFiles] = useState({
-    video: [] as File[],
-    display: [] as File[],
-    banner: [] as File[]
-  })
 
   // DSP & SSP Selection State
-  const [selectedDSPs, setSelectedDSPs] = useState<string[]>(["The Trade Desk", "Amazon DSP", "Verizon Media DSP"])
+  const [selectedDSPs, setSelectedDSPs] = useState<string[]>(["The Trade Desk", "Amazon DSP", "TAS Open Marketplace"])
   const [selectedSSPs, setSelectedSSPs] = useState<string[]>(["Google Ad Manager", "Amazon Publisher Services", "PubMatic"])
 
   const handleDSPToggle = (dspName: string) => {
@@ -94,22 +80,6 @@ const CreateCampaign = () => {
     )
   }
 
-  const handleFileUpload = (type: 'video' | 'display' | 'banner', files: FileList | null) => {
-    if (!files) return
-    
-    const fileArray = Array.from(files)
-    setUploadedFiles(prev => ({
-      ...prev,
-      [type]: [...prev[type], ...fileArray]
-    }))
-  }
-
-  const removeFile = (type: 'video' | 'display' | 'banner', index: number) => {
-    setUploadedFiles(prev => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
-    }))
-  }
 
   const launchCampaign = () => {
     // Validate required fields
@@ -123,7 +93,6 @@ const CreateCampaign = () => {
       ...campaignData,
       dsps: selectedDSPs,
       ssps: selectedSSPs,
-      creatives: uploadedFiles,
       strategy: generatedStrategy,
       createdAt: new Date().toISOString()
     }
@@ -668,7 +637,8 @@ const CreateCampaign = () => {
                     { name: "Google DV360", type: "Video & Display" },
                     { name: "Adobe Advertising Cloud", type: "Cross-Channel" },
                     { name: "Verizon Media DSP", type: "Native & Video" },
-                    { name: "Samsung DSP", type: "CTV & Mobile" }
+                    { name: "Samsung DSP", type: "CTV & Mobile" },
+                    { name: "TAS Open Marketplace", type: "Open Exchange" }
                   ].map((dsp) => {
                     const isSelected = selectedDSPs.includes(dsp.name)
                     return (
@@ -885,208 +855,6 @@ const CreateCampaign = () => {
             </CardContent>
           </Card>
 
-          {/* Creative Assets */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Image className="h-5 w-5" />
-                Creative Assets
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h4 className="font-medium text-foreground flex items-center gap-2">
-                  <Video className="h-4 w-4" />
-                  Video Creatives
-                </h4>
-                <div className="space-y-3">
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <Video className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Upload video files (MP4, MOV, AVI)</p>
-                    <input
-                      ref={videoFileRef}
-                      type="file"
-                      accept=".mp4,.mov,.avi"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFileUpload('video', e.target.files)}
-                    />
-                    <Button 
-                      variant="outline" 
-                      className="mt-2"
-                      onClick={() => videoFileRef.current?.click()}
-                    >
-                      Browse Files
-                    </Button>
-                  </div>
-                  {uploadedFiles.video.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Uploaded Videos:</Label>
-                      {uploadedFiles.video.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                          <span className="text-sm">{file.name}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeFile('video', index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Video Duration</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="6s">6 seconds (Bumper)</SelectItem>
-                          <SelectItem value="15s">15 seconds</SelectItem>
-                          <SelectItem value="30s">30 seconds</SelectItem>
-                          <SelectItem value="60s">60 seconds</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Aspect Ratio</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select ratio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="16:9">16:9 (Landscape)</SelectItem>
-                          <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
-                          <SelectItem value="1:1">1:1 (Square)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-foreground flex items-center gap-2">
-                  <Layout className="h-4 w-4" />
-                  Display Creatives
-                </h4>
-                <div className="space-y-3">
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <Image className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Upload display ads (JPG, PNG, GIF)</p>
-                    <input
-                      ref={displayFileRef}
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.gif"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFileUpload('display', e.target.files)}
-                    />
-                    <Button 
-                      variant="outline" 
-                      className="mt-2"
-                      onClick={() => displayFileRef.current?.click()}
-                    >
-                      Browse Files
-                    </Button>
-                  </div>
-                  {uploadedFiles.display.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Uploaded Display Ads:</Label>
-                      {uploadedFiles.display.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                          <span className="text-sm">{file.name}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeFile('display', index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {[
-                      "300x250 (Medium Rectangle)",
-                      "728x90 (Leaderboard)", 
-                      "320x50 (Mobile Banner)",
-                      "160x600 (Wide Skyscraper)",
-                      "970x250 (Billboard)",
-                      "300x600 (Half Page)"
-                    ].map((size) => (
-                      <div key={size} className="flex items-center space-x-2">
-                        <Checkbox id={size} />
-                        <Label htmlFor={size} className="text-xs">{size}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-foreground flex items-center gap-2">
-                  <Radio className="h-4 w-4" />
-                  Banner Creatives
-                </h4>
-                <div className="space-y-3">
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <Layout className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Upload banner ads (HTML5, JPG, PNG)</p>
-                    <input
-                      ref={bannerFileRef}
-                      type="file"
-                      accept=".html,.jpg,.jpeg,.png"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFileUpload('banner', e.target.files)}
-                    />
-                    <Button 
-                      variant="outline" 
-                      className="mt-2"
-                      onClick={() => bannerFileRef.current?.click()}
-                    >
-                      Browse Files
-                    </Button>
-                  </div>
-                  {uploadedFiles.banner.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Uploaded Banner Ads:</Label>
-                      {uploadedFiles.banner.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                          <span className="text-sm">{file.name}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeFile('banner', index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label>Animation Settings</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="autoplay" />
-                        <Label htmlFor="autoplay" className="text-sm">Auto-play animation</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="loop" />
-                        <Label htmlFor="loop" className="text-sm">Loop animation</Label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Carbon Footprint */}
           <Card>
