@@ -88,7 +88,7 @@ const geoData = [
 
 const campaignPerformance = [
   {
-    campaign: "Q1 Brand Awareness",
+    campaign: "P&G Gillete",
     impressions: "1.2M",
     clicks: "24.5K",
     spend: "$8,450",
@@ -102,7 +102,7 @@ const campaignPerformance = [
     status: "Active"
   },
   {
-    campaign: "Holiday Retargeting",
+    campaign: "Apex Girl",
     impressions: "890K",
     clicks: "18.2K",
     spend: "$6,230",
@@ -116,7 +116,7 @@ const campaignPerformance = [
     status: "Active"
   },
   {
-    campaign: "Mobile App Install",
+    campaign: "Jio Retail",
     impressions: "2.1M",
     clicks: "45.6K",
     spend: "$12,890",
