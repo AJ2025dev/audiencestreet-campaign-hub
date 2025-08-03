@@ -20,7 +20,7 @@ const navigationItems = [
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
   { title: "Create Campaign", url: "/campaigns/create", icon: PlusCircle },
   { title: "Audiences", url: "/audiences", icon: Users },
-  { title: "Targeting", url: "/targeting", icon: Target },
+  { title: "Retail Media", url: "/retail-media", icon: Target },
   { title: "Reports", url: "/reports", icon: TrendingUp },
   { title: "Settings", url: "/settings", icon: Settings },
 ]

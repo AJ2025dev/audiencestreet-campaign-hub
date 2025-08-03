@@ -249,6 +249,249 @@ const CreateCampaign = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Geo Targeting */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Geographic Targeting
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Country/Region</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select countries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="us">United States</SelectItem>
+                      <SelectItem value="ca">Canada</SelectItem>
+                      <SelectItem value="uk">United Kingdom</SelectItem>
+                      <SelectItem value="au">Australia</SelectItem>
+                      <SelectItem value="de">Germany</SelectItem>
+                      <SelectItem value="fr">France</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>State/Province</Label>
+                  <Input placeholder="Enter states or provinces" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Cities</Label>
+                  <Input placeholder="Enter cities (comma-separated)" />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Zip/Postal Codes</Label>
+                  <Input placeholder="Enter zip codes" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Radius Targeting</Label>
+                <div className="flex items-center gap-2">
+                  <Input placeholder="Latitude" />
+                  <Input placeholder="Longitude" />
+                  <Input placeholder="Radius (miles)" type="number" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Location Exclusions</Label>
+                <Textarea placeholder="Enter locations to exclude from targeting" rows={2} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* DSP & SSP Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                DSP & SSP Selection
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-medium text-foreground">Demand Side Platforms (DSP)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { name: "The Trade Desk", type: "Premium DSP", connected: true },
+                    { name: "Amazon DSP", type: "Retail Media", connected: true },
+                    { name: "Google DV360", type: "Video & Display", connected: false },
+                    { name: "Adobe Advertising Cloud", type: "Cross-Channel", connected: false },
+                    { name: "Verizon Media DSP", type: "Native & Video", connected: true },
+                    { name: "Samsung DSP", type: "CTV & Mobile", connected: false }
+                  ].map((dsp) => (
+                    <div key={dsp.name} className={`p-4 border rounded-lg ${dsp.connected ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="font-medium text-foreground">{dsp.name}</h5>
+                          <p className="text-sm text-muted-foreground">{dsp.type}</p>
+                        </div>
+                        <Checkbox checked={dsp.connected} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-foreground">Supply Side Platforms (SSP)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { name: "Google Ad Manager", type: "Premium Inventory", connected: true },
+                    { name: "PubMatic", type: "Header Bidding", connected: true },
+                    { name: "Rubicon Project", type: "Real-time Bidding", connected: false },
+                    { name: "AppNexus/Xandr", type: "Programmatic", connected: true },
+                    { name: "OpenX", type: "Video & Mobile", connected: false },
+                    { name: "Index Exchange", type: "Header Bidding", connected: false }
+                  ].map((ssp) => (
+                    <div key={ssp.name} className={`p-4 border rounded-lg ${ssp.connected ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="font-medium text-foreground">{ssp.name}</h5>
+                          <p className="text-sm text-muted-foreground">{ssp.type}</p>
+                        </div>
+                        <Checkbox checked={ssp.connected} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Bidding Strategy</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select bidding strategy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cpm">CPM (Cost Per Mille)</SelectItem>
+                    <SelectItem value="cpc">CPC (Cost Per Click)</SelectItem>
+                    <SelectItem value="cpa">CPA (Cost Per Acquisition)</SelectItem>
+                    <SelectItem value="vcpm">vCPM (Viewable CPM)</SelectItem>
+                    <SelectItem value="dynamic">Dynamic Bidding</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* DMP Options */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Data Management Platform (DMP)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-medium text-foreground">First-Party Data Sources</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    "CRM Database",
+                    "Website Analytics", 
+                    "Email Subscribers",
+                    "Mobile App Users",
+                    "Purchase History",
+                    "Customer Support Data"
+                  ].map((source) => (
+                    <div key={source} className="flex items-center space-x-2">
+                      <Checkbox id={source} />
+                      <Label htmlFor={source} className="text-sm">{source}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-foreground">Third-Party Data Providers</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { name: "Acxiom", type: "Demographics & Lifestyle", cost: "$2.50 CPM" },
+                    { name: "Experian", type: "Financial & Credit", cost: "$3.00 CPM" },
+                    { name: "Epsilon", type: "Purchase Intent", cost: "$4.25 CPM" },
+                    { name: "LiveRamp", type: "Identity Resolution", cost: "$1.75 CPM" },
+                    { name: "Neustar", type: "Location & Mobile", cost: "$2.80 CPM" },
+                    { name: "Lotame", type: "Behavioral Segments", cost: "$3.50 CPM" }
+                  ].map((provider) => (
+                    <div key={provider.name} className="p-3 border border-border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium text-foreground text-sm">{provider.name}</h5>
+                        <Checkbox />
+                      </div>
+                      <p className="text-xs text-muted-foreground">{provider.type}</p>
+                      <p className="text-xs text-primary font-medium">{provider.cost}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-foreground">Audience Segments</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {[
+                    "High-Value Customers",
+                    "Frequent Purchasers",
+                    "Cart Abandoners", 
+                    "Lookalike Audiences",
+                    "Competitor Audiences",
+                    "Interest-Based Segments",
+                    "Behavioral Cohorts",
+                    "Geographic Clusters",
+                    "Device Preferences"
+                  ].map((segment) => (
+                    <div key={segment} className="flex items-center space-x-2">
+                      <Checkbox id={segment} />
+                      <Label htmlFor={segment} className="text-sm">{segment}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Data Refresh Rate</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select refresh rate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="realtime">Real-time</SelectItem>
+                      <SelectItem value="hourly">Hourly</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Attribution Window</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select attribution window" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1day">1 Day</SelectItem>
+                      <SelectItem value="7days">7 Days</SelectItem>
+                      <SelectItem value="14days">14 Days</SelectItem>
+                      <SelectItem value="30days">30 Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}

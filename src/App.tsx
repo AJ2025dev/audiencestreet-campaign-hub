@@ -8,7 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
 import Audiences from "./pages/Audiences";
-import Targeting from "./pages/Targeting";
+import RetailMedia from "./pages/RetailMedia";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
@@ -26,7 +26,7 @@ const App = () => (
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/campaigns/create" element={<CreateCampaign />} />
             <Route path="/audiences" element={<Audiences />} />
-            <Route path="/targeting" element={<Targeting />} />
+            <Route path="/retail-media" element={<RetailMedia />} />
             <Route path="/reports" element={<Reports />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

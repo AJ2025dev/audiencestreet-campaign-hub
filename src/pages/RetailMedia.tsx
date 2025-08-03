@@ -26,7 +26,7 @@ import {
   Plus
 } from "lucide-react"
 
-const Targeting = () => {
+const RetailMedia = () => {
   const [selectedAudiences, setSelectedAudiences] = useState<string[]>([])
   const [customKeywords, setCustomKeywords] = useState("")
 
@@ -68,8 +68,8 @@ const Targeting = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Advanced Targeting</h1>
-          <p className="text-muted-foreground">Create precise audience targeting for your campaigns</p>
+          <h1 className="text-3xl font-bold text-foreground">Retail Media</h1>
+          <p className="text-muted-foreground">Advanced retail media targeting and audience management</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="gap-2">
@@ -404,4 +404,4 @@ const Targeting = () => {
   )
 }
 
-export default Targeting
+export default RetailMedia
