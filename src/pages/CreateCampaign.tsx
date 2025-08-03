@@ -143,12 +143,22 @@ const CreateCampaign = () => {
 
     setIsGenerating(true)
     try {
+      console.log('Calling generate-campaign-strategy with data:', aiPromptData)
+      
       const { data, error } = await supabase.functions.invoke('generate-campaign-strategy', {
         body: aiPromptData
       })
 
+      console.log('Supabase function response:', { data, error })
+
       if (error) {
+        console.error('Supabase function error:', error)
         throw new Error(error.message || 'Failed to generate strategy')
+      }
+
+      if (!data || !data.strategy) {
+        console.error('No strategy returned in data:', data)
+        throw new Error('No strategy returned from AI')
       }
 
       setGeneratedStrategy(data.strategy)
