@@ -64,10 +64,40 @@ Please generate a comprehensive campaign strategy based on this information.`
     })
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`)
+      const errorData = await response.json().catch(() => ({ error: { message: response.statusText } }))
+      console.error(`OpenAI API error: ${response.status} ${response.statusText}`, errorData)
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'OpenAI API rate limit exceeded. Please try again in a few minutes.' }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 429 
+          }
+        )
+      }
+      
+      return new Response(
+        JSON.stringify({ error: `OpenAI API error: ${errorData.error?.message || response.statusText}` }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: response.status 
+        }
+      )
     }
 
     const data = await response.json()
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid response from OpenAI API' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500 
+        }
+      )
+    }
+    
     const strategy = data.choices[0].message.content
 
     return new Response(
