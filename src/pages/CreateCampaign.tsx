@@ -33,6 +33,7 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { supabase } from "@/integrations/supabase/client"
 
 const CreateCampaign = () => {
   const navigate = useNavigate()
@@ -142,24 +143,15 @@ const CreateCampaign = () => {
 
     setIsGenerating(true)
     try {
-      // Use the proper Supabase URL format for edge functions
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-campaign-strategy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`,
-        },
-        body: JSON.stringify(aiPromptData)
+      const { data, error } = await supabase.functions.invoke('generate-campaign-strategy', {
+        body: aiPromptData
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setGeneratedStrategy(data.strategy)
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Failed to generate strategy')
+      if (error) {
+        throw new Error(error.message || 'Failed to generate strategy')
       }
+
+      setGeneratedStrategy(data.strategy)
     } catch (error) {
       console.error('Error generating strategy:', error)
       alert(`Failed to generate campaign strategy: ${error.message}`)
