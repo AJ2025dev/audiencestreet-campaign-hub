@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -61,6 +61,18 @@ const CreateCampaign = () => {
   const [generatedStrategy, setGeneratedStrategy] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
 
+  // File upload refs
+  const videoFileRef = useRef<HTMLInputElement>(null)
+  const displayFileRef = useRef<HTMLInputElement>(null)
+  const bannerFileRef = useRef<HTMLInputElement>(null)
+
+  // Upload states
+  const [uploadedFiles, setUploadedFiles] = useState({
+    video: [] as File[],
+    display: [] as File[],
+    banner: [] as File[]
+  })
+
   // DSP & SSP Selection State
   const [selectedDSPs, setSelectedDSPs] = useState<string[]>(["The Trade Desk", "Amazon DSP", "Verizon Media DSP"])
   const [selectedSSPs, setSelectedSSPs] = useState<string[]>(["Google Ad Manager", "Amazon Publisher Services", "PubMatic"])
@@ -81,6 +93,47 @@ const CreateCampaign = () => {
     )
   }
 
+  const handleFileUpload = (type: 'video' | 'display' | 'banner', files: FileList | null) => {
+    if (!files) return
+    
+    const fileArray = Array.from(files)
+    setUploadedFiles(prev => ({
+      ...prev,
+      [type]: [...prev[type], ...fileArray]
+    }))
+  }
+
+  const removeFile = (type: 'video' | 'display' | 'banner', index: number) => {
+    setUploadedFiles(prev => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index)
+    }))
+  }
+
+  const launchCampaign = () => {
+    // Validate required fields
+    if (!campaignData.name) {
+      alert('Please enter a campaign name')
+      return
+    }
+    
+    // Create campaign object
+    const campaignPayload = {
+      ...campaignData,
+      dsps: selectedDSPs,
+      ssps: selectedSSPs,
+      creatives: uploadedFiles,
+      strategy: generatedStrategy,
+      createdAt: new Date().toISOString()
+    }
+    
+    console.log('Launching campaign:', campaignPayload)
+    alert('Campaign launched successfully! (This is a demo - in production this would connect to your DSP/SSP APIs)')
+    
+    // Navigate back to campaigns page
+    navigate('/campaigns')
+  }
+
   const generateCampaignStrategy = async () => {
     if (!aiPromptData.brandDescription || !aiPromptData.campaignObjective) {
       alert("Please fill in both brand description and campaign objective")
@@ -89,10 +142,13 @@ const CreateCampaign = () => {
 
     setIsGenerating(true)
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-campaign-strategy`, {
+      // Use the proper Supabase URL format for edge functions
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-campaign-strategy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`,
         },
         body: JSON.stringify(aiPromptData)
       })
@@ -101,11 +157,12 @@ const CreateCampaign = () => {
         const data = await response.json()
         setGeneratedStrategy(data.strategy)
       } else {
-        throw new Error('Failed to generate strategy')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to generate strategy')
       }
     } catch (error) {
       console.error('Error generating strategy:', error)
-      alert('Failed to generate campaign strategy. Please try again.')
+      alert(`Failed to generate campaign strategy: ${error.message}`)
     } finally {
       setIsGenerating(false)
     }
@@ -131,7 +188,11 @@ const CreateCampaign = () => {
             <Save className="h-4 w-4" />
             Save Draft
           </Button>
-          <Button variant="gradient" className="gap-2">
+          <Button 
+            variant="gradient" 
+            className="gap-2"
+            onClick={launchCampaign}
+          >
             <Play className="h-4 w-4" />
             Launch Campaign
           </Button>
@@ -457,13 +518,52 @@ const CreateCampaign = () => {
                     <SelectTrigger>
                       <SelectValue placeholder="Select countries" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      <SelectItem value="all">All Countries</SelectItem>
                       <SelectItem value="us">United States</SelectItem>
                       <SelectItem value="ca">Canada</SelectItem>
                       <SelectItem value="uk">United Kingdom</SelectItem>
                       <SelectItem value="au">Australia</SelectItem>
                       <SelectItem value="de">Germany</SelectItem>
                       <SelectItem value="fr">France</SelectItem>
+                      <SelectItem value="it">Italy</SelectItem>
+                      <SelectItem value="es">Spain</SelectItem>
+                      <SelectItem value="nl">Netherlands</SelectItem>
+                      <SelectItem value="se">Sweden</SelectItem>
+                      <SelectItem value="no">Norway</SelectItem>
+                      <SelectItem value="dk">Denmark</SelectItem>
+                      <SelectItem value="fi">Finland</SelectItem>
+                      <SelectItem value="br">Brazil</SelectItem>
+                      <SelectItem value="mx">Mexico</SelectItem>
+                      <SelectItem value="ar">Argentina</SelectItem>
+                      <SelectItem value="cl">Chile</SelectItem>
+                      <SelectItem value="jp">Japan</SelectItem>
+                      <SelectItem value="kr">South Korea</SelectItem>
+                      <SelectItem value="cn">China</SelectItem>
+                      <SelectItem value="in">India</SelectItem>
+                      <SelectItem value="sg">Singapore</SelectItem>
+                      <SelectItem value="hk">Hong Kong</SelectItem>
+                      <SelectItem value="th">Thailand</SelectItem>
+                      <SelectItem value="id">Indonesia</SelectItem>
+                      <SelectItem value="ph">Philippines</SelectItem>
+                      <SelectItem value="my">Malaysia</SelectItem>
+                      <SelectItem value="vn">Vietnam</SelectItem>
+                      <SelectItem value="za">South Africa</SelectItem>
+                      <SelectItem value="eg">Egypt</SelectItem>
+                      <SelectItem value="ae">UAE</SelectItem>
+                      <SelectItem value="sa">Saudi Arabia</SelectItem>
+                      <SelectItem value="ru">Russia</SelectItem>
+                      <SelectItem value="pl">Poland</SelectItem>
+                      <SelectItem value="cz">Czech Republic</SelectItem>
+                      <SelectItem value="hu">Hungary</SelectItem>
+                      <SelectItem value="ro">Romania</SelectItem>
+                      <SelectItem value="bg">Bulgaria</SelectItem>
+                      <SelectItem value="hr">Croatia</SelectItem>
+                      <SelectItem value="si">Slovenia</SelectItem>
+                      <SelectItem value="sk">Slovakia</SelectItem>
+                      <SelectItem value="ee">Estonia</SelectItem>
+                      <SelectItem value="lv">Latvia</SelectItem>
+                      <SelectItem value="lt">Lithuania</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -755,8 +855,39 @@ const CreateCampaign = () => {
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                     <Video className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Upload video files (MP4, MOV, AVI)</p>
-                    <Button variant="outline" className="mt-2">Browse Files</Button>
+                    <input
+                      ref={videoFileRef}
+                      type="file"
+                      accept=".mp4,.mov,.avi"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload('video', e.target.files)}
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="mt-2"
+                      onClick={() => videoFileRef.current?.click()}
+                    >
+                      Browse Files
+                    </Button>
                   </div>
+                  {uploadedFiles.video.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Uploaded Videos:</Label>
+                      {uploadedFiles.video.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <span className="text-sm">{file.name}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => removeFile('video', index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label>Video Duration</Label>
@@ -798,8 +929,39 @@ const CreateCampaign = () => {
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                     <Image className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Upload display ads (JPG, PNG, GIF)</p>
-                    <Button variant="outline" className="mt-2">Browse Files</Button>
+                    <input
+                      ref={displayFileRef}
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.gif"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload('display', e.target.files)}
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="mt-2"
+                      onClick={() => displayFileRef.current?.click()}
+                    >
+                      Browse Files
+                    </Button>
                   </div>
+                  {uploadedFiles.display.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Uploaded Display Ads:</Label>
+                      {uploadedFiles.display.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <span className="text-sm">{file.name}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => removeFile('display', index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {[
                       "300x250 (Medium Rectangle)",
@@ -827,8 +989,39 @@ const CreateCampaign = () => {
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                     <Layout className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Upload banner ads (HTML5, JPG, PNG)</p>
-                    <Button variant="outline" className="mt-2">Browse Files</Button>
+                    <input
+                      ref={bannerFileRef}
+                      type="file"
+                      accept=".html,.jpg,.jpeg,.png"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload('banner', e.target.files)}
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="mt-2"
+                      onClick={() => bannerFileRef.current?.click()}
+                    >
+                      Browse Files
+                    </Button>
                   </div>
+                  {uploadedFiles.banner.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Uploaded Banner Ads:</Label>
+                      {uploadedFiles.banner.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <span className="text-sm">{file.name}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => removeFile('banner', index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label>Animation Settings</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
