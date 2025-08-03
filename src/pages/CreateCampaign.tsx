@@ -143,10 +143,26 @@ const CreateCampaign = () => {
 
     setIsGenerating(true)
     try {
-      console.log('Calling generate-campaign-strategy with data:', aiPromptData)
+      // Collect platform context from current form state
+      const platformContext = {
+        selectedDSPs: selectedDSPs.length > 0 ? selectedDSPs : undefined,
+        selectedSSPs: selectedSSPs.length > 0 ? selectedSSPs : undefined,
+        environments: getSelectedEnvironments(),
+        budget: campaignData.budget ? `Total: ${campaignData.budget}, Daily: ${campaignData.dailyBudget}` : undefined,
+        targetAudience: getSelectedTargetingInfo(),
+        retailMediaSegments: getRetailMediaSegments(),
+        campaignObjectiveType: campaignData.objective
+      }
+
+      const requestBody = {
+        ...aiPromptData,
+        platformContext
+      }
+
+      console.log('Calling generate-campaign-strategy with data:', requestBody)
       
       const { data, error } = await supabase.functions.invoke('generate-campaign-strategy', {
-        body: aiPromptData
+        body: requestBody
       })
 
       console.log('Supabase function response:', { data, error })
@@ -168,6 +184,36 @@ const CreateCampaign = () => {
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  // Helper functions to collect current form state
+  const getSelectedEnvironments = () => {
+    // This would collect from form state - for now return default environments
+    // In a full implementation, you'd track which environment checkboxes are selected
+    return ["CTV/OTT", "Web", "In-App"]
+  }
+
+  const getSelectedTargetingInfo = () => {
+    const targeting = []
+    if (campaignData.targeting.age.min !== 18 || campaignData.targeting.age.max !== 65) {
+      targeting.push(`Age: ${campaignData.targeting.age.min}-${campaignData.targeting.age.max}`)
+    }
+    if (campaignData.targeting.gender !== "all") {
+      targeting.push(`Gender: ${campaignData.targeting.gender}`)
+    }
+    return targeting.length > 0 ? targeting.join(', ') : undefined
+  }
+
+  const getRetailMediaSegments = () => {
+    // This would collect selected retail media segments from the form
+    // For now, return some common ones based on campaign objective
+    const retailSegments = []
+    if (campaignData.objective === "conversions") {
+      retailSegments.push("Cart Abandoners", "High-Value Shoppers")
+    } else if (campaignData.objective === "awareness") {
+      retailSegments.push("New Customers", "Category Browsers")
+    }
+    return retailSegments.length > 0 ? retailSegments : undefined
   }
 
   return (
