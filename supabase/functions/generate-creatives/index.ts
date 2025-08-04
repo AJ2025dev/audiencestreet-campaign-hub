@@ -13,7 +13,17 @@ serve(async (req) => {
   }
 
   try {
-    const { websiteUrl, creativeBrief, environments, creativeTypes } = await req.json();
+    // Work in progress - return placeholder response
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        message: "Creative generation is work in progress",
+        creatives: [],
+        concepts: {},
+        totalGenerated: 0
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
     
     console.log('Received request:', { websiteUrl, creativeBrief, environments, creativeTypes });
     
