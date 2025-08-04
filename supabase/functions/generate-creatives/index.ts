@@ -48,33 +48,66 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert creative director. Generate compelling ad copy and visual concepts for digital advertising.'
+            content: `You are an expert creative director with 15+ years experience creating award-winning digital advertising campaigns. You understand brand psychology, visual design principles, consumer behavior, and conversion optimization.`
           },
           {
             role: 'user',
-            content: `Create 3 different creative concepts for these requirements:
-            Website: ${websiteUrl || 'Not provided'}
-            Brand Info: ${brandInfo}
-            Creative Brief: ${creativeBrief || 'Not provided'}
-            Environments: ${environments?.join(', ') || 'All'}
-            Types: ${creativeTypes?.join(', ') || 'All'}
-            
-            For each concept, provide:
-            1. A compelling headline (max 6 words)
-            2. Supporting text (max 15 words)
-            3. Visual description for banner generation
-            4. Call-to-action (max 3 words)`
+            content: `Create 3 highly-targeted, conversion-focused creative concepts for:
+
+BRAND ANALYSIS:
+Website: ${websiteUrl || 'Not provided'}
+Brand Info: ${brandInfo}
+Creative Brief: ${creativeBrief || 'Not provided'}
+Target Environments: ${environments?.join(', ') || 'All platforms'}
+Creative Types: ${creativeTypes?.join(', ') || 'All formats'}
+
+For each concept, provide EXACT content in this JSON format:
+{
+  "concept1": {
+    "headline": "6-word compelling headline",
+    "subtext": "15-word benefit-focused supporting text",
+    "cta": "3-word action verb",
+    "visualPrompt": "Detailed 50-word visual description including colors, composition, style, emotions, and brand elements",
+    "strategy": "Why this concept converts"
+  },
+  "concept2": {...},
+  "concept3": {...}
+}
+
+Focus on:
+- Emotional triggers and pain points
+- Clear value propositions
+- Professional, modern aesthetic
+- Brand-appropriate messaging
+- Conversion-optimized design elements`
           }
         ],
       }),
     });
 
     const conceptData = await conceptResponse.json();
-    const concepts = conceptData.choices[0].message.content;
+    const conceptsText = conceptData.choices[0].message.content;
+    
+    // Parse the JSON response
+    let concepts;
+    try {
+      concepts = JSON.parse(conceptsText);
+    } catch (e) {
+      // Fallback if JSON parsing fails
+      concepts = {
+        concept1: {
+          headline: "Transform Your Business",
+          subtext: "Innovative solutions that drive growth and success",
+          cta: "Get Started",
+          visualPrompt: "Professional business imagery with modern technology elements, clean corporate design, confident professionals, bright lighting, premium brand aesthetic, growth-focused visuals",
+          strategy: "Appeals to business transformation desires"
+        }
+      };
+    }
 
     // Generate banners only if Display Banners is selected
     const shouldGenerateBanners = creativeTypes?.includes('Display Banners');
@@ -87,25 +120,47 @@ serve(async (req) => {
         { width: 300, height: 600, name: 'skyscraper' }
       ];
 
-      for (const size of bannerSizes) {
+      const conceptKeys = Object.keys(concepts);
+      
+      for (let i = 0; i < bannerSizes.length; i++) {
+        const size = bannerSizes[i];
+        const conceptKey = conceptKeys[i % conceptKeys.length];
+        const concept = concepts[conceptKey];
+        
         try {
-          const prompt = `Professional advertising banner, ${creativeBrief || 'modern business'}, clean design, brand colors, ${size.width}x${size.height} aspect ratio, high quality, marketing banner, ${brandInfo}`;
+          // Generate high-quality banner using OpenAI's image generation
+          const detailedPrompt = `Professional advertising banner design: ${concept.visualPrompt}. Include headline "${concept.headline}" and call-to-action "${concept.cta}". Modern typography, ${size.width}x${size.height} dimensions, advertising layout, marketing design, brand-focused, high-resolution, professional quality.`;
           
-          const image = await hf.textToImage({
-            inputs: prompt,
-            model: 'black-forest-labs/FLUX.1-schnell',
+          const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-image-1',
+              prompt: detailedPrompt,
+              n: 1,
+              size: '1024x1024',
+              quality: 'high',
+              output_format: 'png'
+            }),
           });
 
-          const arrayBuffer = await image.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-
-          creatives.push({
-            type: 'banner',
-            size: size.name,
-            dimensions: `${size.width}x${size.height}`,
-            image: `data:image/png;base64,${base64}`,
-            concept: concepts.split('\n')[0] // Use first concept
-          });
+          const imageData = await imageResponse.json();
+          
+          if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
+            creatives.push({
+              type: 'banner',
+              size: size.name,
+              dimensions: `${size.width}x${size.height}`,
+              image: `data:image/png;base64,${imageData.data[0].b64_json}`,
+              headline: concept.headline,
+              subtext: concept.subtext,
+              cta: concept.cta,
+              concept: concept.strategy
+            });
+          }
         } catch (error) {
           console.error(`Error generating ${size.name} banner:`, error);
         }
@@ -117,43 +172,79 @@ serve(async (req) => {
     
     if (shouldGenerateVideo) {
       try {
-        // Generate 4 keyframes for a 30-second video
-        const keyframePrompts = [
-          `Opening scene: ${creativeBrief || 'modern business'} brand introduction, professional, clean, ${brandInfo}`,
-          `Product showcase: ${creativeBrief || 'modern business'} main product/service, engaging, ${brandInfo}`,
-          `Benefits highlight: ${creativeBrief || 'modern business'} key benefits, compelling, ${brandInfo}`,
-          `Call to action: ${creativeBrief || 'modern business'} strong CTA, professional finish, ${brandInfo}`
+        const firstConcept = concepts[Object.keys(concepts)[0]];
+        
+        // Generate 4 keyframes for a 30-second video with detailed storytelling
+        const keyframeScenes = [
+          {
+            time: '0-7s',
+            description: 'Hook & Problem',
+            prompt: `Opening video frame: ${firstConcept.visualPrompt}. Scene shows the problem or captures attention. Professional video production quality, 16:9 cinematic composition, engaging opening shot, advertising style.`
+          },
+          {
+            time: '8-15s', 
+            description: 'Solution Introduction',
+            prompt: `Product/service introduction: ${creativeBrief}. Shows the solution in action, ${brandInfo}. Professional product showcase, modern presentation, high-quality video frame, 16:9 format, marketing video style.`
+          },
+          {
+            time: '16-23s',
+            description: 'Benefits & Proof',
+            prompt: `Benefits demonstration: ${firstConcept.subtext}. Visual proof of value, customer satisfaction, results-focused imagery. Professional video quality, testimonial-style scene, 16:9 composition.`
+          },
+          {
+            time: '24-30s',
+            description: 'Call to Action',
+            prompt: `Strong closing frame: "${firstConcept.headline}" with prominent "${firstConcept.cta}" button. Professional call-to-action scene, conversion-focused design, urgency and excitement, 16:9 video format.`
+          }
         ];
 
         const keyframes = [];
-        for (let i = 0; i < keyframePrompts.length; i++) {
+        for (let i = 0; i < keyframeScenes.length; i++) {
           try {
-            const keyframeImage = await hf.textToImage({
-              inputs: `${keyframePrompts[i]}, 16:9 aspect ratio, high quality, video frame, advertising`,
-              model: 'black-forest-labs/FLUX.1-schnell',
+            const scene = keyframeScenes[i];
+            
+            const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${openAIApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'gpt-image-1',
+                prompt: scene.prompt,
+                n: 1,
+                size: '1536x1024', // 16:9 aspect ratio
+                quality: 'high',
+                output_format: 'png'
+              }),
             });
 
-            const arrayBuffer = await keyframeImage.arrayBuffer();
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+            const imageData = await imageResponse.json();
             
-            keyframes.push({
-              scene: i + 1,
-              timestamp: `${i * 7}s`,
-              image: `data:image/png;base64,${base64}`,
-              description: keyframePrompts[i]
-            });
+            if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
+              keyframes.push({
+                scene: i + 1,
+                timestamp: scene.time,
+                image: `data:image/png;base64,${imageData.data[0].b64_json}`,
+                description: scene.description,
+                script: scene.prompt
+              });
+            }
           } catch (error) {
             console.error(`Error generating keyframe ${i + 1}:`, error);
           }
         }
 
-        creatives.push({
-          type: 'video',
-          duration: '30s',
-          keyframes,
-          concept: 'Video advertising with visual keyframes',
-          format: '16:9 Video'
-        });
+        if (keyframes.length > 0) {
+          creatives.push({
+            type: 'video',
+            duration: '30s',
+            keyframes,
+            headline: firstConcept.headline,
+            concept: firstConcept.strategy,
+            format: '16:9 Video (1536x1024)'
+          });
+        }
       } catch (error) {
         console.error('Error generating video keyframes:', error);
       }
