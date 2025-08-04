@@ -119,7 +119,10 @@ Focus on:
     // Generate banners only if Display Banners is selected
     const shouldGenerateBanners = creativeTypes?.includes('Display Banners');
     
+    console.log('Should generate banners:', shouldGenerateBanners);
+    
     if (shouldGenerateBanners) {
+      console.log('Starting banner generation...');
       const bannerSizes = [
         { width: 728, height: 90, name: 'leaderboard' },
         { width: 300, height: 250, name: 'medium-rectangle' },
@@ -133,6 +136,8 @@ Focus on:
         const size = bannerSizes[i];
         const conceptKey = conceptKeys[i % conceptKeys.length];
         const concept = concepts[conceptKey];
+        
+        console.log(`Generating ${size.name} banner with concept:`, concept);
         
         try {
           // Generate high-quality banner using OpenAI's image generation
@@ -155,6 +160,7 @@ Focus on:
           });
 
           const imageData = await imageResponse.json();
+          console.log(`Image generation response for ${size.name}:`, imageData);
           
           if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
             creatives.push({
@@ -167,6 +173,9 @@ Focus on:
               cta: concept.cta,
               concept: concept.strategy
             });
+            console.log(`Successfully generated ${size.name} banner`);
+          } else {
+            console.log(`Failed to generate ${size.name} banner - no image data`);
           }
         } catch (error) {
           console.error(`Error generating ${size.name} banner:`, error);
