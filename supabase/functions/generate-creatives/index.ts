@@ -15,11 +15,18 @@ serve(async (req) => {
   try {
     const { websiteUrl, creativeBrief, environments, creativeTypes } = await req.json();
     
+    console.log('Received request:', { websiteUrl, creativeBrief, environments, creativeTypes });
+    
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const hfToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
     
-    if (!openAIApiKey || !hfToken) {
-      throw new Error('Missing required API keys');
+    console.log('API Keys available:', { 
+      openAI: !!openAIApiKey, 
+      hf: !!hfToken 
+    });
+    
+    if (!openAIApiKey) {
+      throw new Error('Missing OpenAI API key');
     }
 
     const hf = new HfInference(hfToken);
