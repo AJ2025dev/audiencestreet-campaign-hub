@@ -46,6 +46,8 @@ const Creatives = () => {
     siteUrl: "",
     creativeBrief: ""
   })
+  const [selectedEnvironments, setSelectedEnvironments] = useState<string[]>([])
+  const [selectedCreativeTypes, setSelectedCreativeTypes] = useState<string[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedCreatives, setGeneratedCreatives] = useState<any[]>([])
   const { toast } = useToast()
@@ -83,8 +85,8 @@ const Creatives = () => {
         body: {
           websiteUrl: aiData.siteUrl,
           creativeBrief: aiData.creativeBrief,
-          environments: ["CTV/OTT", "Web Display", "Mobile In-App", "Social Media", "Digital Billboards"],
-          creativeTypes: ["Video Ads (15s, 30s)", "Display Banners", "Native Ads", "Rich Media", "Interactive Ads"]
+          environments: selectedEnvironments,
+          creativeTypes: selectedCreativeTypes
         }
       });
 
@@ -186,34 +188,56 @@ const Creatives = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Target Environments</Label>
-                      <div className="space-y-2">
-                        {["CTV/OTT", "Web Display", "Mobile In-App", "Social Media", "Digital Billboards"].map((env) => (
-                          <div key={env} className="flex items-center space-x-2">
-                            <input type="checkbox" id={env} defaultChecked />
-                            <Label htmlFor={env} className="text-sm">{env}</Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                     <div className="space-y-2">
+                       <Label>Target Environments</Label>
+                       <div className="space-y-2">
+                         {["CTV/OTT", "Web Display", "Mobile In-App", "Social Media", "Digital Billboards"].map((env) => (
+                           <div key={env} className="flex items-center space-x-2">
+                             <input 
+                               type="checkbox" 
+                               id={env} 
+                               checked={selectedEnvironments.includes(env)}
+                               onChange={(e) => {
+                                 if (e.target.checked) {
+                                   setSelectedEnvironments([...selectedEnvironments, env]);
+                                 } else {
+                                   setSelectedEnvironments(selectedEnvironments.filter(e => e !== env));
+                                 }
+                               }}
+                             />
+                             <Label htmlFor={env} className="text-sm">{env}</Label>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
                     
-                    <div className="space-y-2">
-                      <Label>Creative Types</Label>
-                      <div className="space-y-2">
-                        {["Video Ads (15s, 30s)", "Display Banners", "Native Ads", "Rich Media", "Interactive Ads"].map((type) => (
-                          <div key={type} className="flex items-center space-x-2">
-                            <input type="checkbox" id={type} defaultChecked />
-                            <Label htmlFor={type} className="text-sm">{type}</Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                     <div className="space-y-2">
+                       <Label>Creative Types</Label>
+                       <div className="space-y-2">
+                         {["Video Ads (15s, 30s)", "Display Banners", "Native Ads", "Rich Media", "Interactive Ads"].map((type) => (
+                           <div key={type} className="flex items-center space-x-2">
+                             <input 
+                               type="checkbox" 
+                               id={type} 
+                               checked={selectedCreativeTypes.includes(type)}
+                               onChange={(e) => {
+                                 if (e.target.checked) {
+                                   setSelectedCreativeTypes([...selectedCreativeTypes, type]);
+                                 } else {
+                                   setSelectedCreativeTypes(selectedCreativeTypes.filter(t => t !== type));
+                                 }
+                               }}
+                             />
+                             <Label htmlFor={type} className="text-sm">{type}</Label>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
                   </div>
 
                   <Button 
                     onClick={generateCreatives}
-                    disabled={isGenerating || (!aiData.siteUrl && !aiData.creativeBrief)}
+                    disabled={isGenerating || (!aiData.siteUrl && !aiData.creativeBrief) || selectedCreativeTypes.length === 0}
                     className="w-full"
                     variant="gradient"
                   >
@@ -253,25 +277,45 @@ const Creatives = () => {
                                </div>
                              </>
                             )}
-                            {creative.type === 'video' && (
-                              <>
-                                <div className="flex justify-between items-center">
-                                  <h4 className="font-medium">Video Concept</h4>
-                                  <span className="text-sm text-muted-foreground">{creative.duration}</span>
-                                </div>
-                                <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
-                                  {creative.storyboard}
-                                </div>
-                                <div className="flex gap-2 mt-3">
-                                  <Button size="sm" variant="outline" className="flex-1">
-                                    Download Storyboard
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="flex-1">
-                                    Assign to Campaign
-                                  </Button>
-                                </div>
-                              </>
-                            )}
+                             {creative.type === 'video' && (
+                               <>
+                                 <div className="flex justify-between items-center">
+                                   <h4 className="font-medium">Video Concept</h4>
+                                   <span className="text-sm text-muted-foreground">{creative.duration}</span>
+                                 </div>
+                                 {creative.keyframes && creative.keyframes.length > 0 ? (
+                                   <div className="space-y-3">
+                                     <p className="text-sm text-muted-foreground">Video Keyframes:</p>
+                                     <div className="grid grid-cols-2 gap-2">
+                                       {creative.keyframes.map((keyframe: any, kIndex: number) => (
+                                         <div key={kIndex} className="space-y-1">
+                                           <img 
+                                             src={keyframe.image} 
+                                             alt={`Keyframe ${keyframe.scene}`}
+                                             className="w-full h-auto rounded border aspect-video object-cover"
+                                           />
+                                           <p className="text-xs text-muted-foreground">
+                                             Scene {keyframe.scene} ({keyframe.timestamp})
+                                           </p>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 ) : (
+                                   <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
+                                     {creative.concept || creative.storyboard}
+                                   </div>
+                                 )}
+                                 <div className="flex gap-2 mt-3">
+                                   <Button size="sm" variant="outline" className="flex-1">
+                                     Download Video Keyframes
+                                   </Button>
+                                   <Button size="sm" variant="outline" className="flex-1">
+                                     Assign to Campaign
+                                   </Button>
+                                 </div>
+                               </>
+                             )}
                             {creative.type === 'rich-media' && (
                               <>
                                 <div className="flex justify-between items-center">
