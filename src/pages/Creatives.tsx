@@ -252,26 +252,83 @@ const Creatives = () => {
                                  </Button>
                                </div>
                              </>
-                           )}
-                           {creative.type === 'video' && (
-                             <>
-                               <div className="flex justify-between items-center">
-                                 <h4 className="font-medium">Video Concept</h4>
-                                 <span className="text-sm text-muted-foreground">{creative.duration}</span>
-                               </div>
-                               <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
-                                 {creative.storyboard}
-                               </div>
-                               <div className="flex gap-2 mt-3">
-                                 <Button size="sm" variant="outline" className="flex-1">
-                                   Download Storyboard
-                                 </Button>
-                                 <Button size="sm" variant="outline" className="flex-1">
-                                   Assign to Campaign
-                                 </Button>
-                               </div>
-                             </>
-                           )}
+                            )}
+                            {creative.type === 'video' && (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <h4 className="font-medium">Video Concept</h4>
+                                  <span className="text-sm text-muted-foreground">{creative.duration}</span>
+                                </div>
+                                <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
+                                  {creative.storyboard}
+                                </div>
+                                <div className="flex gap-2 mt-3">
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    Download Storyboard
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    Assign to Campaign
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                            {creative.type === 'rich-media' && (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <h4 className="font-medium">Rich Media</h4>
+                                  <span className="text-sm text-muted-foreground">{creative.format}</span>
+                                </div>
+                                <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
+                                  {creative.description}
+                                </div>
+                                <div className="flex gap-2 mt-3">
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    Download Concept
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    Assign to Campaign
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                            {creative.type === 'native' && (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <h4 className="font-medium">Native Ad</h4>
+                                  <span className="text-sm text-muted-foreground">{creative.format}</span>
+                                </div>
+                                <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
+                                  {creative.description}
+                                </div>
+                                <div className="flex gap-2 mt-3">
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    Download Concept
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    Assign to Campaign
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                            {creative.type === 'interactive' && (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <h4 className="font-medium">Interactive Ad</h4>
+                                  <span className="text-sm text-muted-foreground">{creative.format}</span>
+                                </div>
+                                <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
+                                  {creative.description}
+                                </div>
+                                <div className="flex gap-2 mt-3">
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    Download Concept
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    Assign to Campaign
+                                  </Button>
+                                </div>
+                              </>
+                            )}
                          </div>
                        ))}
                     </div>

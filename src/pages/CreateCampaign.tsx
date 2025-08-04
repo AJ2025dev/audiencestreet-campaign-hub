@@ -41,6 +41,7 @@ const CreateCampaign = () => {
     dailyBudget: "",
     startDate: "",
     endDate: "",
+    advertiserId: "",
     targeting: {
       age: { min: 18, max: 65 },
       gender: "all",
@@ -88,6 +89,11 @@ const CreateCampaign = () => {
       return
     }
     
+    if (!campaignData.advertiserId) {
+      alert('Please select an advertiser')
+      return
+    }
+    
     // Create campaign object
     const campaignPayload = {
       ...campaignData,
@@ -100,8 +106,8 @@ const CreateCampaign = () => {
     console.log('Launching campaign:', campaignPayload)
     alert('Campaign launched successfully! (This is a demo - in production this would connect to your DSP/SSP APIs)')
     
-    // Navigate back to campaigns page
-    navigate('/campaigns')
+    // Navigate back to advertiser campaigns page
+    navigate(`/advertisers/${campaignData.advertiserId}/campaigns`)
   }
 
   const generateCampaignStrategy = async () => {
@@ -229,6 +235,20 @@ const CreateCampaign = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="advertiser">Select Advertiser</Label>
+                <Select value={campaignData.advertiserId} onValueChange={(value) => setCampaignData(prev => ({ ...prev, advertiserId: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose an advertiser" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">TechCorp Solutions</SelectItem>
+                    <SelectItem value="2">Fashion Forward</SelectItem>
+                    <SelectItem value="3">EcoGreen Products</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="campaign-name">Campaign Name</Label>
                 <Input 
                   id="campaign-name"
@@ -240,7 +260,7 @@ const CreateCampaign = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="objective">Campaign Objective</Label>
-                <Select>
+                <Select value={campaignData.objective} onValueChange={(value) => setCampaignData(prev => ({ ...prev, objective: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select campaign objective" />
                   </SelectTrigger>

@@ -108,8 +108,12 @@ serve(async (req) => {
       }
     }
 
-    // Generate video concepts
-    if (creativeTypes?.includes('video')) {
+    // Generate video concepts (always generate if video types are in the creative types)
+    const hasVideoTypes = creativeTypes?.some(type => 
+      type.includes('Video') || type.includes('video') || type.includes('Rich Media') || type.includes('Interactive') || type.includes('Native')
+    );
+    
+    if (hasVideoTypes || creativeTypes?.includes('Video Ads (15s, 30s)')) {
       const videoResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -147,6 +151,58 @@ serve(async (req) => {
         concept: 'Video advertising concept'
       });
     }
+
+    // Generate Rich Media concepts
+    const richMediaResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'Create detailed rich media and interactive ad concepts.'
+          },
+          {
+            role: 'user',
+            content: `Create rich media and interactive ad concepts for:
+            Brief: ${creativeBrief}
+            Brand: ${brandInfo}
+            
+            Include concepts for:
+            - Rich Media expandable banners
+            - Interactive video overlays
+            - Native ad formats
+            - Carousel/gallery ads`
+          }
+        ],
+      }),
+    });
+
+    const richMediaData = await richMediaResponse.json();
+    creatives.push({
+      type: 'rich-media',
+      format: 'Expandable Banner',
+      concept: richMediaData.choices[0].message.content.split('\n')[0],
+      description: richMediaData.choices[0].message.content
+    });
+
+    creatives.push({
+      type: 'native',
+      format: 'Native Article',
+      concept: 'Native advertising concept',
+      description: richMediaData.choices[0].message.content.split('\n').slice(1).join('\n')
+    });
+
+    creatives.push({
+      type: 'interactive',
+      format: 'Interactive Video Overlay',
+      concept: 'Interactive advertising concept',
+      description: richMediaData.choices[0].message.content
+    });
 
     return new Response(
       JSON.stringify({ 
