@@ -113,6 +113,22 @@ const Creatives = () => {
     }
   }
 
+  // Download functionality
+  const downloadImage = (imageDataUrl: string, filename: string) => {
+    const link = document.createElement('a')
+    link.href = imageDataUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const downloadVideoKeyframes = (keyframes: any[], creativeName: string) => {
+    keyframes.forEach((keyframe, index) => {
+      downloadImage(keyframe.image, `${creativeName}_keyframe_${index + 1}.png`)
+    })
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -267,10 +283,15 @@ const Creatives = () => {
                                  alt={`Generated ${creative.size} banner`}
                                  className="w-full h-auto rounded border"
                                />
-                               <div className="flex gap-2">
-                                 <Button size="sm" variant="outline" className="flex-1">
-                                   Download
-                                 </Button>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="flex-1"
+                                    onClick={() => downloadImage(creative.image, `${creative.size}_banner.png`)}
+                                  >
+                                    Download
+                                  </Button>
                                  <Button size="sm" variant="outline" className="flex-1">
                                    Assign to Campaign
                                  </Button>
@@ -307,7 +328,12 @@ const Creatives = () => {
                                    </div>
                                  )}
                                  <div className="flex gap-2 mt-3">
-                                   <Button size="sm" variant="outline" className="flex-1">
+                                   <Button 
+                                     size="sm" 
+                                     variant="outline" 
+                                     className="flex-1"
+                                     onClick={() => downloadVideoKeyframes(creative.keyframes, 'video_ad')}
+                                   >
                                      Download Video Keyframes
                                    </Button>
                                    <Button size="sm" variant="outline" className="flex-1">
