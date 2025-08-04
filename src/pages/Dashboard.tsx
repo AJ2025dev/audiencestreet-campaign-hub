@@ -72,14 +72,14 @@ const campaignData = [
 const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
-      <div className="container mx-auto p-6 space-y-8">
+      <div className="container mx-auto p-6 space-y-6">
         {/* Enhanced Header */}
-        <div className="flex items-center justify-between p-6 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/50 shadow-elegant">
+        <div className="flex items-center justify-between p-4 bg-card/60 backdrop-blur-sm rounded-xl border border-border/50 shadow-elegant">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
               Dashboard
             </h1>
-            <p className="text-muted-foreground mt-2 text-lg">Monitor your campaign performance and key metrics</p>
+            <p className="text-muted-foreground mt-1 text-sm">Monitor your campaign performance and key metrics</p>
           </div>
           <Button variant="gradient" className="gap-2 shadow-lg hover:shadow-glow transition-all duration-300">
             <PlusCircle className="h-4 w-4" />
@@ -88,61 +88,61 @@ const Dashboard = () => {
         </div>
 
         {/* Enhanced Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-gradient-to-br from-card/80 via-card to-card/60 backdrop-blur-sm border border-border/50 shadow-elegant hover:shadow-glow transition-all duration-300 group">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors duration-300">
-                  <DollarSign className="h-6 w-6 text-primary group-hover:scale-110 transition-transform duration-300" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors duration-300">
+                  <DollarSign className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Spend</p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">$24,680</p>
+                  <p className="text-xs text-muted-foreground">Total Spend</p>
+                  <p className="text-xl font-bold text-foreground">$24,680</p>
                   <p className="text-xs text-success font-medium">+12.5% from last month</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-card/80 via-card to-card/60 backdrop-blur-sm border border-border/50 shadow-elegant hover:shadow-glow transition-all duration-300 group">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-warning/10 rounded-xl group-hover:bg-warning/20 transition-colors duration-300">
-                  <Eye className="h-6 w-6 text-warning group-hover:scale-110 transition-transform duration-300" />
+          <Card className="bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-warning/10 rounded-lg group-hover:bg-warning/20 transition-colors duration-300">
+                  <Eye className="h-5 w-5 text-warning group-hover:scale-110 transition-transform duration-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Impressions</p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">4.2M</p>
+                  <p className="text-xs text-muted-foreground">Impressions</p>
+                  <p className="text-xl font-bold text-foreground">4.2M</p>
                   <p className="text-xs text-success font-medium">+8.2% from last month</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-card/80 via-card to-card/60 backdrop-blur-sm border border-border/50 shadow-elegant hover:shadow-glow transition-all duration-300 group">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-success/10 rounded-xl group-hover:bg-success/20 transition-colors duration-300">
-                  <MousePointer className="h-6 w-6 text-success group-hover:scale-110 transition-transform duration-300" />
+          <Card className="bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors duration-300">
+                  <MousePointer className="h-5 w-5 text-success group-hover:scale-110 transition-transform duration-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Clicks</p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">88.3K</p>
+                  <p className="text-xs text-muted-foreground">Clicks</p>
+                  <p className="text-xl font-bold text-foreground">88.3K</p>
                   <p className="text-xs text-success font-medium">+15.3% from last month</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-card/80 via-card to-card/60 backdrop-blur-sm border border-border/50 shadow-elegant hover:shadow-glow transition-all duration-300 group">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-500/10 rounded-xl group-hover:bg-purple-500/20 transition-colors duration-300">
-                  <TrendingUp className="h-6 w-6 text-purple-500 group-hover:scale-110 transition-transform duration-300" />
+          <Card className="bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors duration-300">
+                  <TrendingUp className="h-5 w-5 text-purple-500 group-hover:scale-110 transition-transform duration-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">CTR</p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">2.08%</p>
+                  <p className="text-xs text-muted-foreground">CTR</p>
+                  <p className="text-xl font-bold text-foreground">2.08%</p>
                   <p className="text-xs text-success font-medium">+0.12% from last month</p>
                 </div>
               </div>
@@ -151,13 +151,13 @@ const Dashboard = () => {
         </div>
 
         {/* Enhanced Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Performance Chart */}
-          <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-elegant hover:shadow-glow transition-all duration-300">
+          <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
             <CardHeader className="border-b border-border/30 bg-gradient-to-r from-primary/5 to-primary-glow/5">
-              <CardTitle className="flex items-center gap-3 text-xl">
+              <CardTitle className="flex items-center gap-3 text-lg">
                 <div className="p-2 bg-primary/10 rounded-lg">
-                  <BarChart3 className="h-6 w-6 text-primary" />
+                  <BarChart3 className="h-5 w-5 text-primary" />
                 </div>
                 Performance Trends
               </CardTitle>
@@ -207,11 +207,11 @@ const Dashboard = () => {
           </Card>
 
           {/* Spend Chart */}
-          <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-elegant hover:shadow-glow transition-all duration-300">
+          <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
             <CardHeader className="border-b border-border/30 bg-gradient-to-r from-warning/5 to-warning/10">
-              <CardTitle className="flex items-center gap-3 text-xl">
+              <CardTitle className="flex items-center gap-3 text-lg">
                 <div className="p-2 bg-warning/10 rounded-lg">
-                  <DollarSign className="h-6 w-6 text-warning" />
+                  <DollarSign className="h-5 w-5 text-warning" />
                 </div>
                 Daily Spend
               </CardTitle>
@@ -256,11 +256,11 @@ const Dashboard = () => {
         </div>
 
         {/* Enhanced Campaign Table */}
-        <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-elegant">
+        <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-sm">
           <CardHeader className="border-b border-border/30 bg-gradient-to-r from-success/5 to-success/10">
-            <CardTitle className="flex items-center gap-3 text-xl">
+            <CardTitle className="flex items-center gap-3 text-lg">
               <div className="p-2 bg-success/10 rounded-lg">
-                <Users className="h-6 w-6 text-success" />
+                <Users className="h-5 w-5 text-success" />
               </div>
               Active Campaigns
             </CardTitle>
