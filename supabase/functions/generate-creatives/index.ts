@@ -85,34 +85,37 @@ Content Preview: ${websiteContent.substring(0, 500)}...`;
           },
           {
             role: 'user',
-            content: `Create 3 highly-targeted, conversion-focused creative concepts for:
+            content: `You are a creative director specializing in data-driven advertising campaigns. Analyze the provided brand information and create highly targeted creative concepts that directly reflect the brand's actual offerings, style, and target audience.
 
 BRAND ANALYSIS:
-Website: ${websiteUrl || 'Not provided'}
-Brand Info: ${brandInfo}
-Creative Brief: ${creativeBrief || 'Not provided'}
+Website URL: ${websiteUrl || 'Not provided'}
+${brandInfo ? `BRAND DETAILS:\n${brandInfo}\n` : ''}
+${websiteContent ? `WEBSITE CONTENT ANALYSIS:\n${websiteContent.substring(0, 1000)}\n` : ''}
+Creative Brief: ${creativeBrief || 'Use brand analysis to inform creative direction'}
 Target Environments: ${environments?.join(', ') || 'All platforms'}
 Creative Types: ${creativeTypes?.join(', ') || 'All formats'}
 
-For each concept, provide EXACT content in this JSON format:
+INSTRUCTIONS:
+1. Base ALL creative concepts on the actual brand information extracted above
+2. Use specific products, services, or brand elements mentioned in the website content
+3. Match the brand's tone, style, and target demographic
+4. Create headlines that reflect what the brand actually offers
+5. Design visuals that align with the brand's existing aesthetic
+
+Create 3 distinct creative concepts in this JSON format:
 {
   "concept1": {
-    "headline": "6-word compelling headline",
-    "subtext": "15-word benefit-focused supporting text",
-    "cta": "3-word action verb",
-    "visualPrompt": "Detailed 50-word visual description including colors, composition, style, emotions, and brand elements",
-    "strategy": "Why this concept converts"
+    "headline": "Brand-specific compelling headline reflecting actual offerings",
+    "subtext": "Benefit-focused text using brand's actual value propositions",
+    "cta": "Action-oriented CTA matching brand style",
+    "visualPrompt": "Detailed visual description incorporating brand colors, style, products, and aesthetic from website analysis",
+    "strategy": "Why this concept works for this specific brand"
   },
   "concept2": {...},
   "concept3": {...}
 }
 
-Focus on:
-- Emotional triggers and pain points
-- Clear value propositions
-- Professional, modern aesthetic
-- Brand-appropriate messaging
-- Conversion-optimized design elements`
+CRITICAL: Do NOT use generic business language. Use specific details from the brand analysis to create relevant, targeted content that matches what this brand actually does and sells.`
           }
         ],
       }),
