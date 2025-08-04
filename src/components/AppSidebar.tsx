@@ -17,6 +17,7 @@ import {
 
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: BarChart3 },
+  { title: "Advertisers", url: "/advertisers", icon: Target },
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
   { title: "Create Campaign", url: "/campaigns/create", icon: PlusCircle },
   { title: "Creatives", url: "/creatives", icon: Image },

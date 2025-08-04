@@ -229,38 +229,51 @@ const Creatives = () => {
                     <CardTitle>Generated Creatives</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {generatedCreatives.map((creative, index) => (
-                        <div key={index} className="border rounded-lg p-4 space-y-2">
-                          {creative.type === 'banner' && (
-                            <>
-                              <div className="flex justify-between items-center">
-                                <h4 className="font-medium">{creative.size} Banner</h4>
-                                <span className="text-sm text-muted-foreground">{creative.dimensions}</span>
-                              </div>
-                              <img 
-                                src={creative.image} 
-                                alt={`Generated ${creative.size} banner`}
-                                className="w-full h-auto rounded border"
-                              />
-                              <Button size="sm" variant="outline" className="w-full">
-                                Download
-                              </Button>
-                            </>
-                          )}
-                          {creative.type === 'video' && (
-                            <>
-                              <div className="flex justify-between items-center">
-                                <h4 className="font-medium">Video Concept</h4>
-                                <span className="text-sm text-muted-foreground">{creative.duration}</span>
-                              </div>
-                              <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
-                                {creative.storyboard}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))}
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       {generatedCreatives.map((creative, index) => (
+                         <div key={index} className="border rounded-lg p-4 space-y-2">
+                           {creative.type === 'banner' && (
+                             <>
+                               <div className="flex justify-between items-center">
+                                 <h4 className="font-medium">{creative.size} Banner</h4>
+                                 <span className="text-sm text-muted-foreground">{creative.dimensions}</span>
+                               </div>
+                               <img 
+                                 src={creative.image} 
+                                 alt={`Generated ${creative.size} banner`}
+                                 className="w-full h-auto rounded border"
+                               />
+                               <div className="flex gap-2">
+                                 <Button size="sm" variant="outline" className="flex-1">
+                                   Download
+                                 </Button>
+                                 <Button size="sm" variant="outline" className="flex-1">
+                                   Assign to Campaign
+                                 </Button>
+                               </div>
+                             </>
+                           )}
+                           {creative.type === 'video' && (
+                             <>
+                               <div className="flex justify-between items-center">
+                                 <h4 className="font-medium">Video Concept</h4>
+                                 <span className="text-sm text-muted-foreground">{creative.duration}</span>
+                               </div>
+                               <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
+                                 {creative.storyboard}
+                               </div>
+                               <div className="flex gap-2 mt-3">
+                                 <Button size="sm" variant="outline" className="flex-1">
+                                   Download Storyboard
+                                 </Button>
+                                 <Button size="sm" variant="outline" className="flex-1">
+                                   Assign to Campaign
+                                 </Button>
+                               </div>
+                             </>
+                           )}
+                         </div>
+                       ))}
                     </div>
                   </CardContent>
                 </Card>
