@@ -38,34 +38,65 @@ serve(async (req) => {
     if (websiteUrl) {
       try {
         console.log('Analyzing website:', websiteUrl);
-        const websiteResponse = await fetch(websiteUrl);
+        
+        // Add headers to appear like a real browser
+        const websiteResponse = await fetch(websiteUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+          }
+        });
+        
+        if (!websiteResponse.ok) {
+          throw new Error(`HTTP ${websiteResponse.status}: ${websiteResponse.statusText}`);
+        }
+        
         const html = await websiteResponse.text();
+        console.log('HTML content length:', html.length);
         
         // Extract comprehensive brand info
-        const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-        const descMatch = html.match(/<meta name="description" content="(.*?)"/i);
-        const keywordsMatch = html.match(/<meta name="keywords" content="(.*?)"/i);
+        const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+        const descMatch = html.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/i);
+        const keywordsMatch = html.match(/<meta\s+name=["']keywords["']\s+content=["'](.*?)["']/i);
+        
+        // Extract Open Graph data
+        const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["'](.*?)["']/i);
+        const ogDescMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["'](.*?)["']/i);
         
         // Extract text content for analysis
         let textContent = html
           .replace(/<script[\s\S]*?<\/script>/gi, '')
           .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+          .replace(/<header[\s\S]*?<\/header>/gi, '')
+          .replace(/<footer[\s\S]*?<\/footer>/gi, '')
           .replace(/<[^>]*>/g, ' ')
           .replace(/\s+/g, ' ')
           .trim();
         
-        // Take first 2000 characters for analysis
-        websiteContent = textContent.substring(0, 2000);
+        // Take first 3000 characters for analysis
+        websiteContent = textContent.substring(0, 3000);
         
-        brandInfo = `Title: ${titleMatch?.[1] || 'Unknown'}
-Description: ${descMatch?.[1] || 'No description available'}
-Keywords: ${keywordsMatch?.[1] || 'Not specified'}
-Content Preview: ${websiteContent.substring(0, 500)}...`;
+        const title = titleMatch?.[1] || ogTitleMatch?.[1] || 'Unknown';
+        const description = descMatch?.[1] || ogDescMatch?.[1] || 'No description available';
+        const keywords = keywordsMatch?.[1] || 'Not specified';
         
-        console.log('Extracted brand info:', brandInfo.substring(0, 200) + '...');
+        brandInfo = `Company: ${title}
+Description: ${description}
+Keywords: ${keywords}
+Website Content: ${websiteContent.substring(0, 800)}`;
+        
+        console.log('Successfully extracted brand info:');
+        console.log('Title:', title);
+        console.log('Description:', description);
+        console.log('Content preview:', websiteContent.substring(0, 200));
+        
       } catch (e) {
-        console.log('Could not analyze website:', e);
-        brandInfo = `Website analysis failed for ${websiteUrl}`;
+        console.error('Website analysis failed:', e);
+        brandInfo = `Website analysis failed for ${websiteUrl}: ${e.message}`;
       }
     }
 
@@ -122,23 +153,46 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
     });
 
     const conceptData = await conceptResponse.json();
+    console.log('OpenAI concept response:', conceptData);
+    
+    if (!conceptData.choices || !conceptData.choices[0]) {
+      throw new Error('Invalid response from OpenAI: ' + JSON.stringify(conceptData));
+    }
+    
     const conceptsText = conceptData.choices[0].message.content;
+    console.log('Raw concepts text:', conceptsText);
     
     // Parse the JSON response
     let concepts;
     try {
-      concepts = JSON.parse(conceptsText);
+      // Try to extract JSON from the response if it's wrapped in markdown
+      const jsonMatch = conceptsText.match(/```json\s*([\s\S]*?)\s*```/) || conceptsText.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : conceptsText;
+      concepts = JSON.parse(jsonString);
+      console.log('Successfully parsed concepts:', concepts);
     } catch (e) {
-      // Fallback if JSON parsing fails
+      console.error('JSON parsing failed:', e);
+      console.error('Raw response text:', conceptsText);
+      
+      // If we have brand info, try to create more relevant fallback
+      const fallbackHeadline = brandInfo.includes('Company:') 
+        ? brandInfo.split('Company:')[1].split('\n')[0].trim() + ' Solutions'
+        : "Transform Your Business";
+      
+      const fallbackSubtext = brandInfo.includes('Description:')
+        ? brandInfo.split('Description:')[1].split('\n')[0].trim().substring(0, 80) + '...'
+        : "Innovative solutions that drive growth and success";
+      
       concepts = {
         concept1: {
-          headline: "Transform Your Business",
-          subtext: "Innovative solutions that drive growth and success",
+          headline: fallbackHeadline,
+          subtext: fallbackSubtext,
           cta: "Get Started",
-          visualPrompt: "Professional business imagery with modern technology elements, clean corporate design, confident professionals, bright lighting, premium brand aesthetic, growth-focused visuals",
-          strategy: "Appeals to business transformation desires"
+          visualPrompt: brandInfo ? `Professional imagery reflecting: ${brandInfo.substring(0, 200)}` : "Professional business imagery with modern technology elements",
+          strategy: "Based on extracted brand information"
         }
       };
+      console.log('Using fallback concepts:', concepts);
     }
 
     // Generate banners only if Display Banners is selected
