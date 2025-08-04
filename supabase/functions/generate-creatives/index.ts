@@ -108,48 +108,53 @@ serve(async (req) => {
       }
     }
 
-    // Generate video concepts (always generate if video types are in the creative types)
+    // Generate video concepts with actual visual keyframes
     const hasVideoTypes = creativeTypes?.some(type => 
       type.includes('Video') || type.includes('video') || type.includes('Rich Media') || type.includes('Interactive') || type.includes('Native')
     );
     
     if (hasVideoTypes || creativeTypes?.includes('Video Ads (15s, 30s)')) {
-      const videoResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'Create detailed video storyboards for advertising campaigns.'
-            },
-            {
-              role: 'user',
-              content: `Create a 30-second video storyboard for:
-              Brief: ${creativeBrief}
-              Brand: ${brandInfo}
-              
-              Include:
-              - Scene descriptions (5-6 scenes)
-              - Voice-over script
-              - Visual elements
-              - Duration for each scene`
-            }
-          ],
-        }),
-      });
+      try {
+        // Generate 4 keyframes for a 30-second video
+        const keyframePrompts = [
+          `Opening scene: ${creativeBrief || 'modern business'} brand introduction, professional, clean, ${brandInfo}`,
+          `Product showcase: ${creativeBrief || 'modern business'} main product/service, engaging, ${brandInfo}`,
+          `Benefits highlight: ${creativeBrief || 'modern business'} key benefits, compelling, ${brandInfo}`,
+          `Call to action: ${creativeBrief || 'modern business'} strong CTA, professional finish, ${brandInfo}`
+        ];
 
-      const videoData = await videoResponse.json();
-      creatives.push({
-        type: 'video',
-        duration: '30s',
-        storyboard: videoData.choices[0].message.content,
-        concept: 'Video advertising concept'
-      });
+        const keyframes = [];
+        for (let i = 0; i < keyframePrompts.length; i++) {
+          try {
+            const keyframeImage = await hf.textToImage({
+              inputs: `${keyframePrompts[i]}, 16:9 aspect ratio, high quality, video frame, advertising`,
+              model: 'black-forest-labs/FLUX.1-schnell',
+            });
+
+            const arrayBuffer = await keyframeImage.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+            
+            keyframes.push({
+              scene: i + 1,
+              timestamp: `${i * 7}s`,
+              image: `data:image/png;base64,${base64}`,
+              description: keyframePrompts[i]
+            });
+          } catch (error) {
+            console.error(`Error generating keyframe ${i + 1}:`, error);
+          }
+        }
+
+        creatives.push({
+          type: 'video',
+          duration: '30s',
+          keyframes,
+          concept: 'Video advertising with visual keyframes',
+          format: '16:9 Video'
+        });
+      } catch (error) {
+        console.error('Error generating video keyframes:', error);
+      }
     }
 
     // Generate Rich Media concepts
