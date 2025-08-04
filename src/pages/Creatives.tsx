@@ -96,7 +96,7 @@ const Creatives = () => {
         setGeneratedCreatives(data.creatives);
         toast({
           title: "Success!",
-          description: `Generated ${data.totalGenerated} creative assets`,
+          description: `Generated ${data.creatives?.length || 0} creative assets`,
         });
       } else {
         throw new Error(data.error);
