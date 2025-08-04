@@ -76,44 +76,46 @@ serve(async (req) => {
     const conceptData = await conceptResponse.json();
     const concepts = conceptData.choices[0].message.content;
 
-    // Generate banners for different sizes
-    const bannerSizes = [
-      { width: 728, height: 90, name: 'leaderboard' },
-      { width: 300, height: 250, name: 'medium-rectangle' },
-      { width: 320, height: 50, name: 'mobile-banner' },
-      { width: 300, height: 600, name: 'skyscraper' }
-    ];
+    // Generate banners only if Display Banners is selected
+    const shouldGenerateBanners = creativeTypes?.includes('Display Banners');
+    
+    if (shouldGenerateBanners) {
+      const bannerSizes = [
+        { width: 728, height: 90, name: 'leaderboard' },
+        { width: 300, height: 250, name: 'medium-rectangle' },
+        { width: 320, height: 50, name: 'mobile-banner' },
+        { width: 300, height: 600, name: 'skyscraper' }
+      ];
 
-    for (const size of bannerSizes) {
-      try {
-        const prompt = `Professional advertising banner, ${creativeBrief || 'modern business'}, clean design, brand colors, ${size.width}x${size.height} aspect ratio, high quality, marketing banner, ${brandInfo}`;
-        
-        const image = await hf.textToImage({
-          inputs: prompt,
-          model: 'black-forest-labs/FLUX.1-schnell',
-        });
+      for (const size of bannerSizes) {
+        try {
+          const prompt = `Professional advertising banner, ${creativeBrief || 'modern business'}, clean design, brand colors, ${size.width}x${size.height} aspect ratio, high quality, marketing banner, ${brandInfo}`;
+          
+          const image = await hf.textToImage({
+            inputs: prompt,
+            model: 'black-forest-labs/FLUX.1-schnell',
+          });
 
-        const arrayBuffer = await image.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          const arrayBuffer = await image.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-        creatives.push({
-          type: 'banner',
-          size: size.name,
-          dimensions: `${size.width}x${size.height}`,
-          image: `data:image/png;base64,${base64}`,
-          concept: concepts.split('\n')[0] // Use first concept
-        });
-      } catch (error) {
-        console.error(`Error generating ${size.name} banner:`, error);
+          creatives.push({
+            type: 'banner',
+            size: size.name,
+            dimensions: `${size.width}x${size.height}`,
+            image: `data:image/png;base64,${base64}`,
+            concept: concepts.split('\n')[0] // Use first concept
+          });
+        } catch (error) {
+          console.error(`Error generating ${size.name} banner:`, error);
+        }
       }
     }
 
-    // Generate video concepts with actual visual keyframes
-    const hasVideoTypes = creativeTypes?.some(type => 
-      type.includes('Video') || type.includes('video') || type.includes('Rich Media') || type.includes('Interactive') || type.includes('Native')
-    );
+    // Generate video concepts with actual visual keyframes - only if Video Ads is selected
+    const shouldGenerateVideo = creativeTypes?.includes('Video Ads (15s, 30s)');
     
-    if (hasVideoTypes || creativeTypes?.includes('Video Ads (15s, 30s)')) {
+    if (shouldGenerateVideo) {
       try {
         // Generate 4 keyframes for a 30-second video
         const keyframePrompts = [
@@ -157,57 +159,70 @@ serve(async (req) => {
       }
     }
 
-    // Generate Rich Media concepts
-    const richMediaResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Create detailed rich media and interactive ad concepts.'
-          },
-          {
-            role: 'user',
-            content: `Create rich media and interactive ad concepts for:
-            Brief: ${creativeBrief}
-            Brand: ${brandInfo}
-            
-            Include concepts for:
-            - Rich Media expandable banners
-            - Interactive video overlays
-            - Native ad formats
-            - Carousel/gallery ads`
-          }
-        ],
-      }),
-    });
+    // Generate Rich Media concepts only if selected
+    const shouldGenerateRichMedia = creativeTypes?.includes('Rich Media');
+    const shouldGenerateNative = creativeTypes?.includes('Native Ads');
+    const shouldGenerateInteractive = creativeTypes?.includes('Interactive Ads');
+    
+    if (shouldGenerateRichMedia || shouldGenerateNative || shouldGenerateInteractive) {
+      const richMediaResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Create detailed rich media and interactive ad concepts.'
+            },
+            {
+              role: 'user',
+              content: `Create rich media and interactive ad concepts for:
+              Brief: ${creativeBrief}
+              Brand: ${brandInfo}
+              
+              Include concepts for:
+              - Rich Media expandable banners
+              - Interactive video overlays
+              - Native ad formats
+              - Carousel/gallery ads`
+            }
+          ],
+        }),
+      });
 
-    const richMediaData = await richMediaResponse.json();
-    creatives.push({
-      type: 'rich-media',
-      format: 'Expandable Banner',
-      concept: richMediaData.choices[0].message.content.split('\n')[0],
-      description: richMediaData.choices[0].message.content
-    });
+      const richMediaData = await richMediaResponse.json();
+      
+      if (shouldGenerateRichMedia) {
+        creatives.push({
+          type: 'rich-media',
+          format: 'Expandable Banner',
+          concept: richMediaData.choices[0].message.content.split('\n')[0],
+          description: richMediaData.choices[0].message.content
+        });
+      }
 
-    creatives.push({
-      type: 'native',
-      format: 'Native Article',
-      concept: 'Native advertising concept',
-      description: richMediaData.choices[0].message.content.split('\n').slice(1).join('\n')
-    });
+      if (shouldGenerateNative) {
+        creatives.push({
+          type: 'native',
+          format: 'Native Article',
+          concept: 'Native advertising concept',
+          description: richMediaData.choices[0].message.content.split('\n').slice(1).join('\n')
+        });
+      }
 
-    creatives.push({
-      type: 'interactive',
-      format: 'Interactive Video Overlay',
-      concept: 'Interactive advertising concept',
-      description: richMediaData.choices[0].message.content
-    });
+      if (shouldGenerateInteractive) {
+        creatives.push({
+          type: 'interactive',
+          format: 'Interactive Video Overlay',
+          concept: 'Interactive advertising concept',
+          description: richMediaData.choices[0].message.content
+        });
+      }
+    }
 
     return new Response(
       JSON.stringify({ 
