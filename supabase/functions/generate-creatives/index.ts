@@ -34,16 +34,38 @@ serve(async (req) => {
 
     // Analyze website if URL provided
     let brandInfo = '';
+    let websiteContent = '';
     if (websiteUrl) {
       try {
+        console.log('Analyzing website:', websiteUrl);
         const websiteResponse = await fetch(websiteUrl);
         const html = await websiteResponse.text();
-        // Extract basic brand info from title and meta description
+        
+        // Extract comprehensive brand info
         const titleMatch = html.match(/<title>(.*?)<\/title>/i);
         const descMatch = html.match(/<meta name="description" content="(.*?)"/i);
-        brandInfo = `Brand: ${titleMatch?.[1] || 'Unknown'}, Description: ${descMatch?.[1] || 'No description'}`;
+        const keywordsMatch = html.match(/<meta name="keywords" content="(.*?)"/i);
+        
+        // Extract text content for analysis
+        let textContent = html
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        // Take first 2000 characters for analysis
+        websiteContent = textContent.substring(0, 2000);
+        
+        brandInfo = `Title: ${titleMatch?.[1] || 'Unknown'}
+Description: ${descMatch?.[1] || 'No description available'}
+Keywords: ${keywordsMatch?.[1] || 'Not specified'}
+Content Preview: ${websiteContent.substring(0, 500)}...`;
+        
+        console.log('Extracted brand info:', brandInfo.substring(0, 200) + '...');
       } catch (e) {
         console.log('Could not analyze website:', e);
+        brandInfo = `Website analysis failed for ${websiteUrl}`;
       }
     }
 
