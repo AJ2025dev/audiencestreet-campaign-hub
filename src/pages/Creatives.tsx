@@ -21,7 +21,10 @@ import {
   Layout,
   Sparkles,
   Globe,
-  FileText
+  FileText,
+  Code,
+  Newspaper,
+  Play
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -33,12 +36,23 @@ const Creatives = () => {
   const videoFileRef = useRef<HTMLInputElement>(null)
   const displayFileRef = useRef<HTMLInputElement>(null)
   const bannerFileRef = useRef<HTMLInputElement>(null)
+  const htmlFileRef = useRef<HTMLInputElement>(null)
+  const nativeFileRef = useRef<HTMLInputElement>(null)
 
   // Upload states
   const [uploadedFiles, setUploadedFiles] = useState({
     video: [] as File[],
     display: [] as File[],
-    banner: [] as File[]
+    banner: [] as File[],
+    html: [] as File[],
+    native: [] as File[]
+  })
+
+  // Additional states for HTML/VAST tags
+  const [htmlTagInputs, setHtmlTagInputs] = useState({
+    htmlTag: "",
+    jsTag: "",
+    vastTag: ""
   })
 
   // AI Generation states
@@ -52,7 +66,7 @@ const Creatives = () => {
   const [generatedCreatives, setGeneratedCreatives] = useState<any[]>([])
   const { toast } = useToast()
 
-  const handleFileUpload = (type: 'video' | 'display' | 'banner', files: FileList | null) => {
+  const handleFileUpload = (type: 'video' | 'display' | 'banner' | 'html' | 'native', files: FileList | null) => {
     if (!files) return
     
     const fileArray = Array.from(files)
@@ -62,7 +76,7 @@ const Creatives = () => {
     }))
   }
 
-  const removeFile = (type: 'video' | 'display' | 'banner', index: number) => {
+  const removeFile = (type: 'video' | 'display' | 'banner' | 'html' | 'native', index: number) => {
     setUploadedFiles(prev => ({
       ...prev,
       [type]: prev[type].filter((_, i) => i !== index)
@@ -130,46 +144,56 @@ const Creatives = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate('/campaigns')}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground">Creative Assets</h1>
-          <p className="text-muted-foreground">Upload existing creatives or generate new ones with AI</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2">
-            <Save className="h-4 w-4" />
-            Save Creatives
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/20">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <div className="flex items-center gap-6 p-6 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-elegant">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate('/campaigns')}
+            className="hover:bg-accent/50 rounded-xl"
+          >
+            <ArrowLeft className="h-5 w-5" />
           </Button>
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Creative Assets
+            </h1>
+            <p className="text-muted-foreground mt-2 text-lg">Upload existing creatives or generate new ones with AI</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="gradient" className="gap-2 shadow-lg">
+              <Save className="h-4 w-4" />
+              Save Creatives
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          <Tabs defaultValue="ai-generation" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="ai-generation">AI Generation</TabsTrigger>
-              <TabsTrigger value="upload">Upload Existing</TabsTrigger>
-            </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            <Tabs defaultValue="ai-generation" className="space-y-8">
+              <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm p-1">
+                <TabsTrigger value="ai-generation" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  AI Generation
+                </TabsTrigger>
+                <TabsTrigger value="upload" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  Upload Existing
+                </TabsTrigger>
+              </TabsList>
             
-            <TabsContent value="ai-generation" className="space-y-6">
-              {/* AI Creative Generation */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5" />
-                    AI Creative Generation
-                  </CardTitle>
-                </CardHeader>
+              <TabsContent value="ai-generation" className="space-y-8">
+                {/* AI Creative Generation */}
+                <Card className="bg-card/50 backdrop-blur-sm border border-border/50 shadow-elegant">
+                  <CardHeader className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-primary-glow/5">
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Sparkles className="h-6 w-6 text-primary" />
+                      </div>
+                      AI Creative Generation
+                    </CardTitle>
+                  </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="site-url" className="flex items-center gap-2">
@@ -407,92 +431,99 @@ const Creatives = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="upload" className="space-y-6">
-              {/* Video Creatives */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Video className="h-5 w-5" />
-                    Video Creatives
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <Video className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Upload video files (MP4, MOV, AVI)</p>
-                    <input
-                      ref={videoFileRef}
-                      type="file"
-                      accept=".mp4,.mov,.avi"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFileUpload('video', e.target.files)}
-                    />
-                    <Button 
-                      variant="outline" 
-                      className="mt-2"
-                      onClick={() => videoFileRef.current?.click()}
-                    >
-                      Browse Files
-                    </Button>
-                  </div>
-                  {uploadedFiles.video.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Uploaded Videos:</Label>
-                      {uploadedFiles.video.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                          <span className="text-sm">{file.name}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeFile('video', index)}
-                          >
-                            Remove
-                          </Button>
+              <TabsContent value="upload" className="space-y-8">
+                {/* Video Creatives */}
+                <Card className="bg-card/50 backdrop-blur-sm border border-border/50 shadow-elegant">
+                  <CardHeader className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-primary-glow/5">
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Video className="h-6 w-6 text-primary" />
+                      </div>
+                      Video Creatives
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6 p-6">
+                    <div className="border-2 border-dashed border-primary/20 rounded-xl p-8 text-center bg-primary/5">
+                      <Play className="h-10 w-10 text-primary/60 mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground mb-4">Upload video files (MP4, MOV, AVI)</p>
+                      <input
+                        ref={videoFileRef}
+                        type="file"
+                        accept=".mp4,.mov,.avi"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => handleFileUpload('video', e.target.files)}
+                      />
+                      <Button 
+                        variant="outline" 
+                        className="hover:bg-primary/5 hover:border-primary/30"
+                        onClick={() => videoFileRef.current?.click()}
+                      >
+                        Browse Files
+                      </Button>
+                    </div>
+                    {uploadedFiles.video.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-base font-medium">Uploaded Videos:</Label>
+                        <div className="space-y-2">
+                          {uploadedFiles.video.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/30">
+                              <span className="text-sm font-medium">{file.name}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => removeFile('video', index)}
+                                className="hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-base font-medium">Video Duration</Label>
+                        <Select>
+                          <SelectTrigger className="bg-muted/30">
+                            <SelectValue placeholder="Select duration" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="6s">6 seconds (Bumper)</SelectItem>
+                            <SelectItem value="15s">15 seconds</SelectItem>
+                            <SelectItem value="30s">30 seconds</SelectItem>
+                            <SelectItem value="60s">60 seconds</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-base font-medium">Aspect Ratio</Label>
+                        <Select>
+                          <SelectTrigger className="bg-muted/30">
+                            <SelectValue placeholder="Select ratio" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="16:9">16:9 (Landscape)</SelectItem>
+                            <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
+                            <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Video Duration</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="6s">6 seconds (Bumper)</SelectItem>
-                          <SelectItem value="15s">15 seconds</SelectItem>
-                          <SelectItem value="30s">30 seconds</SelectItem>
-                          <SelectItem value="60s">60 seconds</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Aspect Ratio</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select ratio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="16:9">16:9 (Landscape)</SelectItem>
-                          <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
-                          <SelectItem value="1:1">1:1 (Square)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
 
-              {/* Display Creatives */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Layout className="h-5 w-5" />
-                    Display Creatives
-                  </CardTitle>
-                </CardHeader>
+                {/* Display Creatives */}
+                <Card className="bg-card/50 backdrop-blur-sm border border-border/50 shadow-elegant">
+                  <CardHeader className="border-b border-border/50 bg-gradient-to-r from-warning/5 to-warning/10">
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="p-2 bg-warning/10 rounded-lg">
+                        <Layout className="h-6 w-6 text-warning" />
+                      </div>
+                      Display Creatives
+                    </CardTitle>
+                  </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                     <Image className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -595,6 +626,182 @@ const Creatives = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* HTML/JS/VAST Tag Creatives */}
+              <Card className="bg-card/50 backdrop-blur-sm border border-border/50 shadow-elegant">
+                <CardHeader className="border-b border-border/50 bg-gradient-to-r from-warning/5 to-warning/10">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 bg-warning/10 rounded-lg">
+                      <Code className="h-6 w-6 text-warning" />
+                    </div>
+                    HTML/JS/VAST Tag Creatives
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6">
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="html-tag" className="text-base font-medium">HTML Tag</Label>
+                      <Textarea 
+                        id="html-tag"
+                        placeholder="Paste your HTML creative tag here..."
+                        rows={4}
+                        value={htmlTagInputs.htmlTag}
+                        onChange={(e) => setHtmlTagInputs(prev => ({ ...prev, htmlTag: e.target.value }))}
+                        className="font-mono text-sm bg-muted/30"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label htmlFor="js-tag" className="text-base font-medium">JavaScript Tag</Label>
+                      <Textarea 
+                        id="js-tag"
+                        placeholder="Paste your JavaScript creative tag here..."
+                        rows={4}
+                        value={htmlTagInputs.jsTag}
+                        onChange={(e) => setHtmlTagInputs(prev => ({ ...prev, jsTag: e.target.value }))}
+                        className="font-mono text-sm bg-muted/30"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label htmlFor="vast-tag" className="text-base font-medium">VAST Tag URL</Label>
+                      <Input 
+                        id="vast-tag"
+                        placeholder="https://example.com/vast-tag-url"
+                        value={htmlTagInputs.vastTag}
+                        onChange={(e) => setHtmlTagInputs(prev => ({ ...prev, vastTag: e.target.value }))}
+                        className="font-mono text-sm bg-muted/30"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="border-2 border-dashed border-primary/20 rounded-xl p-8 text-center bg-primary/5">
+                    <Code className="h-10 w-10 text-primary/60 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-4">Upload HTML/JS files (HTML, JS)</p>
+                    <input
+                      ref={htmlFileRef}
+                      type="file"
+                      accept=".html,.js,.htm"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload('html', e.target.files)}
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="hover:bg-primary/5 hover:border-primary/30"
+                      onClick={() => htmlFileRef.current?.click()}
+                    >
+                      Browse Files
+                    </Button>
+                  </div>
+                  
+                  {uploadedFiles.html.length > 0 && (
+                    <div className="space-y-3">
+                      <Label className="text-base font-medium">Uploaded HTML/JS Files:</Label>
+                      <div className="space-y-2">
+                        {uploadedFiles.html.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/30">
+                            <span className="text-sm font-medium">{file.name}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => removeFile('html', index)}
+                              className="hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Native Creatives */}
+              <Card className="bg-card/50 backdrop-blur-sm border border-border/50 shadow-elegant">
+                <CardHeader className="border-b border-border/50 bg-gradient-to-r from-success/5 to-success/10">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 bg-success/10 rounded-lg">
+                      <Newspaper className="h-6 w-6 text-success" />
+                    </div>
+                    Native Creatives
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6">
+                  <div className="border-2 border-dashed border-success/20 rounded-xl p-8 text-center bg-success/5">
+                    <Newspaper className="h-10 w-10 text-success/60 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-4">Upload native ad content (JSON, XML, Images)</p>
+                    <input
+                      ref={nativeFileRef}
+                      type="file"
+                      accept=".json,.xml,.jpg,.jpeg,.png,.gif"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload('native', e.target.files)}
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="hover:bg-success/5 hover:border-success/30"
+                      onClick={() => nativeFileRef.current?.click()}
+                    >
+                      Browse Files
+                    </Button>
+                  </div>
+                  
+                  {uploadedFiles.native.length > 0 && (
+                    <div className="space-y-3">
+                      <Label className="text-base font-medium">Uploaded Native Files:</Label>
+                      <div className="space-y-2">
+                        {uploadedFiles.native.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/30">
+                            <span className="text-sm font-medium">{file.name}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => removeFile('native', index)}
+                              className="hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">Native Ad Type</Label>
+                      <Select>
+                        <SelectTrigger className="bg-muted/30">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="in-feed">In-Feed</SelectItem>
+                          <SelectItem value="content-recommendation">Content Recommendation</SelectItem>
+                          <SelectItem value="search">Search</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">Content Format</Label>
+                      <Select>
+                        <SelectTrigger className="bg-muted/30">
+                          <SelectValue placeholder="Select format" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="article">Article</SelectItem>
+                          <SelectItem value="video">Video</SelectItem>
+                          <SelectItem value="carousel">Carousel</SelectItem>
+                          <SelectItem value="app-install">App Install</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
@@ -640,6 +847,7 @@ const Creatives = () => {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
     </div>
