@@ -94,6 +94,13 @@ const Creatives = () => {
     }
 
     setIsGenerating(true);
+    console.log('Starting creative generation with data:', {
+      websiteUrl: aiData.siteUrl,
+      creativeBrief: aiData.creativeBrief,
+      environments: selectedEnvironments,
+      creativeTypes: selectedCreativeTypes
+    });
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-creatives', {
         body: {
@@ -104,6 +111,7 @@ const Creatives = () => {
         }
       });
 
+      console.log('Supabase function response:', { data, error });
       if (error) throw error;
 
       if (data.success) {
