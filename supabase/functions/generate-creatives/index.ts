@@ -328,7 +328,10 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
     // Generate video concepts with actual visual keyframes - only if Video Ads is selected
     const shouldGenerateVideo = creativeTypes?.includes('Video Ads (15s, 30s)');
     
+    console.log('Should generate video:', shouldGenerateVideo);
+    
     if (shouldGenerateVideo) {
+      console.log('Starting video keyframe generation...');
       try {
         const firstConcept = concepts[Object.keys(concepts)[0]];
         
@@ -365,6 +368,7 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
             
             // Use optimal API for video keyframes (prefer high quality)
             if (selectedAPI === 'openai' || !replicate) {
+              console.log(`Generating keyframe ${i + 1} with OpenAI...`);
               const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
                 method: 'POST',
                 headers: {
@@ -382,12 +386,17 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
               });
 
               const imageData = await imageResponse.json();
+              console.log(`OpenAI keyframe ${i + 1} response:`, imageData);
               
               if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
                 imageBase64 = imageData.data[0].b64_json;
                 apiUsed = 'OpenAI GPT-Image-1';
+                console.log(`Successfully generated keyframe ${i + 1} with OpenAI`);
+              } else {
+                console.error(`Failed to get base64 data for keyframe ${i + 1}:`, imageData);
               }
             } else if (replicate) {
+              console.log(`Generating keyframe ${i + 1} with Replicate...`);
               const output = await replicate.run("black-forest-labs/flux-schnell", {
                 input: {
                   prompt: scene.prompt,
@@ -401,11 +410,20 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
                 }
               });
               
+              console.log(`Replicate keyframe ${i + 1} response:`, output);
+              
               if (output && output[0]) {
-                const imgResponse = await fetch(output[0]);
-                const imgArrayBuffer = await imgResponse.arrayBuffer();
-                imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imgArrayBuffer)));
-                apiUsed = 'Replicate FLUX-Schnell';
+                try {
+                  const imgResponse = await fetch(output[0]);
+                  const imgArrayBuffer = await imgResponse.arrayBuffer();
+                  imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imgArrayBuffer)));
+                  apiUsed = 'Replicate FLUX-Schnell';
+                  console.log(`Successfully generated keyframe ${i + 1} with Replicate`);
+                } catch (fetchError) {
+                  console.error(`Error fetching Replicate image for keyframe ${i + 1}:`, fetchError);
+                }
+              } else {
+                console.error(`No output received from Replicate for keyframe ${i + 1}`);
               }
             }
             
@@ -520,6 +538,9 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
       stats[api] = (stats[api] || 0) + 1;
       return stats;
     }, {} as Record<string, number>);
+
+    console.log(`Final results: Generated ${creatives.length} creatives with total cost: $${totalCost.toFixed(4)}`);
+    console.log('API usage stats:', apiUsageStats);
 
     return new Response(
       JSON.stringify({ 
