@@ -1,11 +1,32 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2';
+import Replicate from "https://esm.sh/replicate@0.25.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// API client configurations
+interface APIConfig {
+  name: string;
+  costPerImage: number;
+  maxImagesPerBatch: number;
+  supportsVideo: boolean;
+  quality: 'high' | 'medium' | 'low';
+}
+
+const API_CONFIGS: Record<string, APIConfig> = {
+  openai: { name: 'OpenAI', costPerImage: 0.04, maxImagesPerBatch: 10, supportsVideo: false, quality: 'high' },
+  replicate: { name: 'Replicate', costPerImage: 0.008, maxImagesPerBatch: 50, supportsVideo: true, quality: 'medium' },
+};
+
+// Smart API routing logic
+function selectOptimalAPI(requestCount: number, budget: number = 100, quality: 'high' | 'medium' | 'low' = 'medium'): string {
+  if (quality === 'high' || requestCount <= 5) return 'openai';
+  if (requestCount > 20 && budget < 50) return 'replicate';
+  return requestCount > 10 ? 'replicate' : 'openai';
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,34 +34,31 @@ serve(async (req) => {
   }
 
   try {
-    // Work in progress - return placeholder response
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: "Creative generation is work in progress",
-        creatives: [],
-        concepts: {},
-        totalGenerated: 0
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    const { websiteUrl, creativeBrief, environments, creativeTypes } = await req.json();
     
     console.log('Received request:', { websiteUrl, creativeBrief, environments, creativeTypes });
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    const hfToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
+    const replicateApiKey = Deno.env.get('REPLICATE_API_KEY');
     
     console.log('API Keys available:', { 
       openAI: !!openAIApiKey, 
-      hf: !!hfToken 
+      replicate: !!replicateApiKey 
     });
     
     if (!openAIApiKey) {
       throw new Error('Missing OpenAI API key');
     }
 
-    const hf = new HfInference(hfToken);
+    // Initialize Replicate if available
+    const replicate = replicateApiKey ? new Replicate({ auth: replicateApiKey }) : null;
     const creatives = [];
+    
+    // Determine optimal API strategy
+    const estimatedImages = (creativeTypes?.includes('Display Banners') ? 4 : 0) + 
+                           (creativeTypes?.includes('Video Ads (15s, 30s)') ? 4 : 0);
+    const selectedAPI = selectOptimalAPI(estimatedImages);
+    console.log(`Selected API strategy: ${selectedAPI} for ${estimatedImages} images`);
 
     // Analyze website if URL provided
     let brandInfo = '';
@@ -229,40 +247,75 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
         console.log(`Generating ${size.name} banner with concept:`, concept);
         
         try {
-          // Generate high-quality banner using OpenAI's image generation
           const detailedPrompt = `Professional advertising banner design: ${concept.visualPrompt}. Include headline "${concept.headline}" and call-to-action "${concept.cta}". Modern typography, ${size.width}x${size.height} dimensions, advertising layout, marketing design, brand-focused, high-resolution, professional quality.`;
           
-          const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openAIApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'dall-e-3',
-              prompt: detailedPrompt,
-              n: 1,
-              size: '1024x1024',
-              quality: 'hd',
-              response_format: 'b64_json'
-            }),
-          });
-
-          const imageData = await imageResponse.json();
-          console.log(`Image generation response for ${size.name}:`, imageData);
+          let imageBase64 = null;
+          let apiUsed = 'unknown';
           
-          if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
+          // Use selected API for image generation
+          if (selectedAPI === 'openai') {
+            const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${openAIApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'gpt-image-1',
+                prompt: detailedPrompt,
+                n: 1,
+                size: '1024x1024',
+                quality: 'high',
+                output_format: 'png'
+              }),
+            });
+
+            const imageData = await imageResponse.json();
+            console.log(`OpenAI generation response for ${size.name}:`, imageData);
+            
+            if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
+              imageBase64 = imageData.data[0].b64_json;
+              apiUsed = 'OpenAI GPT-Image-1';
+            }
+          } else if (selectedAPI === 'replicate' && replicate) {
+            const output = await replicate.run("black-forest-labs/flux-schnell", {
+              input: {
+                prompt: detailedPrompt,
+                go_fast: true,
+                megapixels: "1",
+                num_outputs: 1,
+                aspect_ratio: "1:1",
+                output_format: "webp",
+                output_quality: 80,
+                num_inference_steps: 4
+              }
+            });
+            
+            console.log(`Replicate generation response for ${size.name}:`, output);
+            
+            if (output && output[0]) {
+              // Download and convert to base64
+              const imgResponse = await fetch(output[0]);
+              const imgArrayBuffer = await imgResponse.arrayBuffer();
+              imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imgArrayBuffer)));
+              apiUsed = 'Replicate FLUX-Schnell';
+            }
+          }
+          
+          if (imageBase64) {
             creatives.push({
               type: 'banner',
               size: size.name,
               dimensions: `${size.width}x${size.height}`,
-              image: `data:image/png;base64,${imageData.data[0].b64_json}`,
+              image: `data:image/png;base64,${imageBase64}`,
               headline: concept.headline,
               subtext: concept.subtext,
               cta: concept.cta,
-              concept: concept.strategy
+              concept: concept.strategy,
+              generatedBy: apiUsed,
+              cost: API_CONFIGS[selectedAPI]?.costPerImage || 0
             });
-            console.log(`Successfully generated ${size.name} banner`);
+            console.log(`Successfully generated ${size.name} banner using ${apiUsed}`);
           } else {
             console.log(`Failed to generate ${size.name} banner - no image data`);
           }
@@ -307,32 +360,64 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
         for (let i = 0; i < keyframeScenes.length; i++) {
           try {
             const scene = keyframeScenes[i];
+            let imageBase64 = null;
+            let apiUsed = 'unknown';
             
-            const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${openAIApiKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                model: 'gpt-image-1',
-                prompt: scene.prompt,
-                n: 1,
-                size: '1536x1024', // 16:9 aspect ratio
-                quality: 'high',
-                output_format: 'png'
-              }),
-            });
+            // Use optimal API for video keyframes (prefer high quality)
+            if (selectedAPI === 'openai' || !replicate) {
+              const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${openAIApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'gpt-image-1',
+                  prompt: scene.prompt,
+                  n: 1,
+                  size: '1536x1024', // 16:9 aspect ratio
+                  quality: 'high',
+                  output_format: 'png'
+                }),
+              });
 
-            const imageData = await imageResponse.json();
+              const imageData = await imageResponse.json();
+              
+              if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
+                imageBase64 = imageData.data[0].b64_json;
+                apiUsed = 'OpenAI GPT-Image-1';
+              }
+            } else if (replicate) {
+              const output = await replicate.run("black-forest-labs/flux-schnell", {
+                input: {
+                  prompt: scene.prompt,
+                  go_fast: true,
+                  megapixels: "1.5",
+                  num_outputs: 1,
+                  aspect_ratio: "16:9",
+                  output_format: "webp",
+                  output_quality: 90,
+                  num_inference_steps: 6
+                }
+              });
+              
+              if (output && output[0]) {
+                const imgResponse = await fetch(output[0]);
+                const imgArrayBuffer = await imgResponse.arrayBuffer();
+                imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imgArrayBuffer)));
+                apiUsed = 'Replicate FLUX-Schnell';
+              }
+            }
             
-            if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
+            if (imageBase64) {
               keyframes.push({
                 scene: i + 1,
                 timestamp: scene.time,
-                image: `data:image/png;base64,${imageData.data[0].b64_json}`,
+                image: `data:image/png;base64,${imageBase64}`,
                 description: scene.description,
-                script: scene.prompt
+                script: scene.prompt,
+                generatedBy: apiUsed,
+                cost: API_CONFIGS[selectedAPI]?.costPerImage || 0
               });
             }
           } catch (error) {
@@ -341,13 +426,16 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
         }
 
         if (keyframes.length > 0) {
+          const totalVideoCost = keyframes.reduce((sum, frame) => sum + (frame.cost || 0), 0);
           creatives.push({
             type: 'video',
             duration: '30s',
             keyframes,
             headline: firstConcept.headline,
             concept: firstConcept.strategy,
-            format: '16:9 Video (1536x1024)'
+            format: '16:9 Video (1536x1024)',
+            totalCost: totalVideoCost,
+            keyframeCount: keyframes.length
           });
         }
       } catch (error) {
@@ -420,12 +508,32 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
       }
     }
 
+    // Calculate total cost and API usage stats
+    const totalCost = creatives.reduce((sum, creative) => {
+      if (creative.cost) return sum + creative.cost;
+      if (creative.totalCost) return sum + creative.totalCost;
+      return sum;
+    }, 0);
+    
+    const apiUsageStats = creatives.reduce((stats, creative) => {
+      const api = creative.generatedBy || 'Unknown';
+      stats[api] = (stats[api] || 0) + 1;
+      return stats;
+    }, {} as Record<string, number>);
+
     return new Response(
       JSON.stringify({ 
         success: true,
         creatives,
         concepts,
-        totalGenerated: creatives.length
+        totalGenerated: creatives.length,
+        totalCost: parseFloat(totalCost.toFixed(4)),
+        apiUsageStats,
+        optimization: {
+          selectedStrategy: selectedAPI,
+          availableAPIs: Object.keys(API_CONFIGS),
+          recommendation: estimatedImages > 20 ? 'Consider bulk generation with Replicate for cost efficiency' : 'OpenAI provides best quality for this batch size'
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
