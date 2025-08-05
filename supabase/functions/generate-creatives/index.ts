@@ -261,12 +261,12 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                model: 'gpt-image-1',
+                model: 'dall-e-3',
                 prompt: detailedPrompt,
                 n: 1,
                 size: '1024x1024',
-                quality: 'high',
-                output_format: 'png'
+                response_format: 'b64_json',
+                quality: 'hd'
               }),
             });
 
@@ -275,7 +275,7 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
             
             if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
               imageBase64 = imageData.data[0].b64_json;
-              apiUsed = 'OpenAI GPT-Image-1';
+              apiUsed = 'OpenAI DALL-E-3';
             }
           } else if (selectedAPI === 'replicate' && replicate) {
             const output = await replicate.run("black-forest-labs/flux-schnell", {
@@ -369,31 +369,70 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
             // Use optimal API for video keyframes (prefer high quality)
             if (selectedAPI === 'openai' || !replicate) {
               console.log(`Generating keyframe ${i + 1} with OpenAI...`);
-              const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${openAIApiKey}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  model: 'gpt-image-1',
-                  prompt: scene.prompt,
-                  n: 1,
-                  size: '1536x1024', // 16:9 aspect ratio
-                  quality: 'high',
-                  output_format: 'png'
-                }),
-              });
-
-              const imageData = await imageResponse.json();
-              console.log(`OpenAI keyframe ${i + 1} response:`, imageData);
               
-              if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
-                imageBase64 = imageData.data[0].b64_json;
-                apiUsed = 'OpenAI GPT-Image-1';
-                console.log(`Successfully generated keyframe ${i + 1} with OpenAI`);
-              } else {
-                console.error(`Failed to get base64 data for keyframe ${i + 1}:`, imageData);
+              try {
+                const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${openAIApiKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    model: 'dall-e-3',
+                    prompt: scene.prompt,
+                    n: 1,
+                    size: '1792x1024', // 16:9 aspect ratio for DALL-E-3
+                    response_format: 'b64_json',
+                    quality: 'hd'
+                  }),
+                });
+
+                const imageData = await imageResponse.json();
+                console.log(`OpenAI keyframe ${i + 1} response:`, imageData);
+                
+                if (imageData.data && imageData.data[0] && imageData.data[0].b64_json) {
+                  imageBase64 = imageData.data[0].b64_json;
+                  apiUsed = 'OpenAI DALL-E-3';
+                  console.log(`Successfully generated keyframe ${i + 1} with OpenAI`);
+                } else if (imageData.error) {
+                  console.error(`OpenAI API error for keyframe ${i + 1}:`, imageData.error);
+                  throw new Error(`OpenAI API error: ${imageData.error.message}`);
+                } else {
+                  console.error(`Failed to get base64 data for keyframe ${i + 1}:`, imageData);
+                  throw new Error('No image data received from OpenAI');
+                }
+              } catch (openAIError) {
+                console.error(`OpenAI failed for keyframe ${i + 1}, falling back to Replicate:`, openAIError);
+                // Fall back to Replicate if OpenAI fails
+                if (replicate) {
+                  console.log(`Falling back to Replicate for keyframe ${i + 1}...`);
+                  try {
+                    const output = await replicate.run("black-forest-labs/flux-schnell", {
+                      input: {
+                        prompt: scene.prompt,
+                        go_fast: true,
+                        megapixels: "1.5",
+                        num_outputs: 1,
+                        aspect_ratio: "16:9",
+                        output_format: "webp",
+                        output_quality: 90,
+                        num_inference_steps: 6
+                      }
+                    });
+                    
+                    console.log(`Replicate fallback keyframe ${i + 1} response:`, output);
+                    
+                    if (output && output[0]) {
+                      const imgResponse = await fetch(output[0]);
+                      const imgArrayBuffer = await imgResponse.arrayBuffer();
+                      imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imgArrayBuffer)));
+                      apiUsed = 'Replicate FLUX-Schnell (Fallback)';
+                      console.log(`Successfully generated keyframe ${i + 1} with Replicate fallback`);
+                    }
+                  } catch (replicateError) {
+                    console.error(`Replicate fallback also failed for keyframe ${i + 1}:`, replicateError);
+                  }
+                }
               }
             } else if (replicate) {
               console.log(`Generating keyframe ${i + 1} with Replicate...`);
