@@ -14,7 +14,144 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      domain_lists: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          entry_type: string
+          id: string
+          is_active: boolean | null
+          list_type: string
+          updated_at: string | null
+          user_id: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          entry_type: string
+          id?: string
+          is_active?: boolean | null
+          list_type: string
+          updated_at?: string | null
+          user_id: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          entry_type?: string
+          id?: string
+          is_active?: boolean | null
+          list_type?: string
+          updated_at?: string | null
+          user_id?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      frequency_caps: {
+        Row: {
+          campaign_id: string
+          cap_type: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          max_impressions: number
+          time_window_hours: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          cap_type: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_impressions: number
+          time_window_hours?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          cap_type?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_impressions?: number
+          time_window_hours?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      impression_tracking: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          first_impression: string | null
+          id: string
+          impression_count: number | null
+          last_impression: string | null
+          user_identifier: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          first_impression?: string | null
+          id?: string
+          impression_count?: number | null
+          last_impression?: string | null
+          user_identifier: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          first_impression?: string | null
+          id?: string
+          impression_count?: number | null
+          last_impression?: string | null
+          user_identifier?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          company_name: string
+          contact_email: string | null
+          created_at: string | null
+          id: string
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          company_name: string
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          company_name?: string
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +160,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "agency" | "advertiser"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +287,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["agency", "advertiser"],
+    },
   },
 } as const
