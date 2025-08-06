@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { BarChart3, Megaphone, Target, TrendingUp, Settings, PlusCircle, Users, Image } from "lucide-react"
+import { BarChart3, Megaphone, Target, TrendingUp, Settings, PlusCircle, Users, Image, Shield, Clock } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
 import {
@@ -22,6 +22,8 @@ const navigationItems = [
   { title: "Create Campaign", url: "/campaigns/create", icon: PlusCircle },
   { title: "Creatives", url: "/creatives", icon: Image },
   { title: "Audiences", url: "/audiences", icon: Users },
+  { title: "Domain Lists", url: "/domain-lists", icon: Shield },
+  { title: "Frequency Capping", url: "/frequency-capping", icon: Clock },
   { title: "Retail Media", url: "/retail-media", icon: Target },
   { title: "Reports", url: "/reports", icon: TrendingUp },
   { title: "Settings", url: "/settings", icon: Settings },
