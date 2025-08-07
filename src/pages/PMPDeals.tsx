@@ -182,6 +182,7 @@ export default function PMPDeals() {
       start_date: deal.start_date ? deal.start_date.split('T')[0] : '',
       end_date: deal.end_date ? deal.end_date.split('T')[0] : '',
       description: deal.description || '',
+      margin_percentage: '10', // Default margin for existing deals
     });
     setIsDialogOpen(true);
   };
@@ -199,6 +200,7 @@ export default function PMPDeals() {
       start_date: '',
       end_date: '',
       description: '',
+      margin_percentage: '10',
     });
   };
 
