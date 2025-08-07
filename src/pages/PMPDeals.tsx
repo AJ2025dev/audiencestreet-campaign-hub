@@ -65,6 +65,7 @@ export default function PMPDeals() {
     start_date: '',
     end_date: '',
     description: '',
+    margin_percentage: '10',
   });
 
   useEffect(() => {
@@ -99,6 +100,7 @@ export default function PMPDeals() {
         ...formData,
         floor_price: parseFloat(formData.floor_price) || 0,
         priority: parseInt(formData.priority) || 1,
+        margin_percentage: Math.min(parseFloat(formData.margin_percentage) || 0, 50),
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
       };
@@ -317,6 +319,52 @@ export default function PMPDeals() {
                     value={formData.floor_price}
                     onChange={(e) => setFormData(prev => ({ ...prev, floor_price: e.target.value }))}
                     placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="margin_percentage">Profit Margin (%)</Label>
+                  <Input
+                    id="margin_percentage"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="50"
+                    value={formData.margin_percentage}
+                    onChange={(e) => {
+                      const value = Math.min(parseFloat(e.target.value) || 0, 50);
+                      setFormData(prev => ({ ...prev, margin_percentage: value.toString() }));
+                    }}
+                    placeholder="10"
+                  />
+                  <p className="text-xs text-muted-foreground">Maximum 50%</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select 
+                    value={formData.currency} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="priority">Priority</Label>
+                  <Input
+                    id="priority"
+                    type="number"
+                    value={formData.priority}
+                    onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
+                    placeholder="1"
                   />
                 </div>
                 <div className="space-y-2">
