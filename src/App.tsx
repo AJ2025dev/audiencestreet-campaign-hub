@@ -16,6 +16,7 @@ import Audiences from "./pages/Audiences";
 import RetailMedia from "./pages/RetailMedia";
 import Reports from "./pages/Reports";
 import Auth from "./pages/Auth";
+import Admin from "./pages/Admin";
 import DomainLists from "./pages/DomainLists";
 import FrequencyCapping from "./pages/FrequencyCapping";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,13 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Admin />
+                </Layout>
+              </ProtectedRoute>
+            } />
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>

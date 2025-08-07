@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface Profile {
   id: string;
   user_id: string;
-  role: 'agency' | 'advertiser';
+  role: 'agency' | 'advertiser' | 'admin';
   company_name: string;
   contact_email?: string;
   phone?: string;

@@ -1,6 +1,8 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { BarChart3, Megaphone, Target, TrendingUp, Settings, PlusCircle, Users, Image, Shield, Clock } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useAuth } from "@/hooks/useAuth"
+import { supabase } from "@/integrations/supabase/client"
 
 import {
   Sidebar,
@@ -31,9 +33,33 @@ const navigationItems = [
 
 export function AppSidebar() {
   const { state } = useSidebar()
+  const { user } = useAuth()
   const location = useLocation()
   const currentPath = location.pathname
   const collapsed = state === "collapsed"
+  const [userRole, setUserRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (user) {
+      fetchUserRole()
+    }
+  }, [user])
+
+  const fetchUserRole = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .single()
+
+      if (!error && data) {
+        setUserRole(data.role)
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error)
+    }
+  }
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/"
@@ -72,6 +98,19 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {userRole === 'admin' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to="/admin" 
+                      className={getNavCls({ isActive: isActive("/admin") })}
+                    >
+                      <Shield className="h-4 w-4" />
+                      {!collapsed && <span>Admin Dashboard</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
