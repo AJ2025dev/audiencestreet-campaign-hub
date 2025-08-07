@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
-import { toast } from 'sonner'
+import { useToast } from '@/components/ui/use-toast'
 import { 
   Users, 
   DollarSign, 
@@ -60,8 +60,9 @@ interface AgencyAdvertiser {
 }
 
 export default function Admin() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
   
   const [users, setUsers] = useState<User[]>([])
   const [commissions, setCommissions] = useState<Commission[]>([])
@@ -89,19 +90,20 @@ export default function Admin() {
       return
     }
 
+    // Restrict admin access to specific email only
+    const ADMIN_EMAIL = 'admin@dsp.com' // Change this to your email
+    
+    if (user.email !== ADMIN_EMAIL) {
+      toast({
+        title: "Access Denied",
+        description: "Admin access is restricted to authorized personnel only.",
+        variant: "destructive",
+      })
+      navigate('/')
+      return
+    }
+
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single()
-
-      if (error || profile?.role !== 'admin') {
-        toast.error('Access denied. Admin privileges required.')
-        navigate('/dashboard')
-        return
-      }
-
       await Promise.all([
         fetchUsers(),
         fetchCommissions(),
@@ -110,7 +112,7 @@ export default function Admin() {
       ])
     } catch (error) {
       console.error('Error checking admin access:', error)
-      navigate('/dashboard')
+      navigate('/')
     } finally {
       setLoading(false)
     }
@@ -204,7 +206,10 @@ export default function Admin() {
 
       if (error) throw error
 
-      toast.success('Commission created successfully')
+      toast({
+        title: "Success",
+        description: "Commission created successfully",
+      })
       setIsCommissionDialogOpen(false)
       setCommissionForm({
         user_id: '',
@@ -215,7 +220,11 @@ export default function Admin() {
       fetchCommissions()
     } catch (error) {
       console.error('Error creating commission:', error)
-      toast.error('Failed to create commission')
+      toast({
+        title: "Error",
+        description: "Failed to create commission",
+        variant: "destructive",
+      })
     }
   }
 
@@ -230,7 +239,11 @@ export default function Admin() {
       fetchCommissions()
     } catch (error) {
       console.error('Error updating commission:', error)
-      toast.error('Failed to update commission')
+      toast({
+        title: "Error",
+        description: "Failed to update commission",
+        variant: "destructive",
+      })
     }
   }
 
@@ -243,11 +256,18 @@ export default function Admin() {
 
       if (error) throw error
 
-      toast.success('User role updated successfully')
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      })
       fetchUsers()
     } catch (error) {
       console.error('Error updating user role:', error)
-      toast.error('Failed to update user role')
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
+        variant: "destructive",
+      })
     }
   }
 

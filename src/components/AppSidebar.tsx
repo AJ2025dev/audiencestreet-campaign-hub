@@ -19,6 +19,7 @@ import {
 
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: BarChart3 },
+  { title: "Media Planning", url: "/media-planning", icon: TrendingUp },
   { title: "Advertisers", url: "/advertisers", icon: Target },
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
   { title: "Create Campaign", url: "/campaigns/create", icon: PlusCircle },
@@ -29,7 +30,7 @@ const navigationItems = [
   { title: "Meta Ads", url: "/meta-ads", icon: Facebook },
   { title: "Google Ads", url: "/google-ads", icon: Search },
   { title: "Retail Media", url: "/retail-media", icon: Target },
-  { title: "Reports", url: "/reports", icon: TrendingUp },
+  { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Settings", url: "/settings", icon: Settings },
 ]
 

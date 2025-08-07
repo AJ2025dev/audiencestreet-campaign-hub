@@ -22,6 +22,7 @@ import FrequencyCapping from "./pages/FrequencyCapping";
 import PMPDeals from "./pages/PMPDeals";
 import MetaAds from "./pages/MetaAds";
 import GoogleAds from "./pages/GoogleAds";
+import MediaPlanning from "./pages/MediaPlanning";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -130,6 +131,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <GoogleAds />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/media-planning" element={
+              <ProtectedRoute>
+                <Layout>
+                  <MediaPlanning />
                 </Layout>
               </ProtectedRoute>
             } />
