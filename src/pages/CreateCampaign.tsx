@@ -24,6 +24,7 @@ import {
   Monitor,
   Smartphone,
   Tv,
+  Clock,
   Radio,
   Youtube,
   Leaf
@@ -533,11 +534,53 @@ const CreateCampaign = () => {
                         ))}
                       </div>
                     </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                   </div>
+                 </TabsContent>
+               </Tabs>
+               
+               {/* Frequency Capping Section */}
+               <div className="space-y-4 pt-6 border-t border-border">
+                 <h4 className="font-medium text-foreground flex items-center gap-2">
+                   <Clock className="h-4 w-4" />
+                   Frequency Capping
+                 </h4>
+                 <p className="text-sm text-muted-foreground">
+                   Control how often users see your ads to optimize performance and reduce ad fatigue.
+                 </p>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div className="space-y-2">
+                     <Label>Cap Type</Label>
+                     <Select>
+                       <SelectTrigger>
+                         <SelectValue placeholder="Select frequency cap" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="daily">Daily</SelectItem>
+                         <SelectItem value="weekly">Weekly</SelectItem>
+                         <SelectItem value="monthly">Monthly</SelectItem>
+                         <SelectItem value="lifetime">Lifetime</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   
+                   <div className="space-y-2">
+                     <Label>Max Impressions</Label>
+                     <Input placeholder="3" type="number" min="1" />
+                   </div>
+                   
+                   <div className="space-y-2">
+                     <Label>Time Window (Hours)</Label>
+                     <Input placeholder="24" type="number" min="1" />
+                   </div>
+                 </div>
+                 
+                 <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                   <strong>Example:</strong> Daily cap of 3 impressions means each user will see your ad at most 3 times per 24-hour period.
+                 </div>
+               </div>
+             </CardContent>
+           </Card>
 
           {/* Geo Targeting */}
           <Card>

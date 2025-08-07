@@ -20,7 +20,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [role, setRole] = useState<'agency' | 'advertiser'>('advertiser');
+  const [role, setRole] = useState<'agency' | 'advertiser' | 'admin'>('advertiser');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
@@ -191,13 +191,14 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Account Type</Label>
-                  <Select value={role} onValueChange={(value: 'agency' | 'advertiser') => setRole(value)}>
+                  <Select value={role} onValueChange={(value: 'agency' | 'advertiser' | 'admin') => setRole(value as any)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select account type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="advertiser">Advertiser</SelectItem>
                       <SelectItem value="agency">Agency</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
