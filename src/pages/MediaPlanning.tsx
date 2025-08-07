@@ -8,7 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { supabase } from '@/integrations/supabase/client'
-import { Loader2, Search, Filter, TrendingUp, Users, Eye, DollarSign } from 'lucide-react'
+import { Loader2, Search, Filter, TrendingUp, Users, Eye, DollarSign, Upload, List, Shield, X } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useAuth } from "@/hooks/useAuth"
 
 interface InventoryItem {
   id: string
@@ -40,16 +42,53 @@ interface MediaPlan {
   estimated_impressions: number
   estimated_cpm: number
   created_at: string
+  domain_lists?: string[]
+  app_lists?: string[]
+  publisher_lists?: string[]
+}
+
+interface DomainListEntry {
+  id: string
+  entry_type: string
+  list_type: string
+  value: string
+  description?: string
+  campaign_id?: string
+  is_global: boolean
+  is_active: boolean
+}
+
+interface Campaign {
+  id: string
+  name: string
 }
 
 export default function MediaPlanning() {
   const { toast } = useToast()
+  const { user } = useAuth()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [mediaPlans, setMediaPlans] = useState<MediaPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedInventory, setSelectedInventory] = useState<string[]>([])
+  
+  // Lists management
+  const [domainLists, setDomainLists] = useState<DomainListEntry[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [selectedDomainLists, setSelectedDomainLists] = useState<string[]>([])
+  const [selectedAppLists, setSelectedAppLists] = useState<string[]>([])
+  const [selectedPublisherLists, setSelectedPublisherLists] = useState<string[]>([])
+  
+  // File upload states
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [uploadForm, setUploadForm] = useState({
+    listType: 'allowlist' as 'allowlist' | 'blocklist',
+    entryType: 'domain' as 'domain' | 'app' | 'site',
+    campaignId: '',
+    file: null as File | null
+  })
+  const [uploading, setUploading] = useState(false)
   
   // New media plan form
   const [planForm, setPlanForm] = useState({
@@ -61,7 +100,11 @@ export default function MediaPlanning() {
   useEffect(() => {
     fetchInventoryData()
     fetchMediaPlans()
-  }, [])
+    if (user) {
+      fetchDomainLists()
+      fetchCampaigns()
+    }
+  }, [user])
 
   const fetchInventoryData = async () => {
     try {
@@ -103,6 +146,41 @@ export default function MediaPlanning() {
       }
     } catch (error) {
       console.error('Error fetching media plans:', error)
+    }
+  }
+
+  const fetchDomainLists = async () => {
+    if (!user) return
+    
+    try {
+      const { data, error } = await supabase
+        .from('domain_lists')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setDomainLists(data || [])
+    } catch (error) {
+      console.error('Error fetching domain lists:', error)
+    }
+  }
+
+  const fetchCampaigns = async () => {
+    if (!user) return
+    
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setCampaigns(data || [])
+    } catch (error) {
+      console.error('Error fetching campaigns:', error)
     }
   }
 
@@ -174,6 +252,54 @@ export default function MediaPlanning() {
     }
   }
 
+  const handleFileUpload = async () => {
+    if (!uploadForm.file || !user) return
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', uploadForm.file)
+      formData.append('listType', uploadForm.listType)
+      formData.append('entryType', uploadForm.entryType)
+      if (uploadForm.campaignId) {
+        formData.append('campaignId', uploadForm.campaignId)
+      }
+
+      const { data, error } = await supabase.functions.invoke('process-list-upload', {
+        body: formData
+      })
+
+      if (error) throw error
+
+      toast({
+        title: "File Uploaded Successfully",
+        description: `Processed ${data.processed_entries} entries from ${uploadForm.file.name}`,
+      })
+
+      // Reset form and close dialog
+      setUploadForm({
+        listType: 'allowlist',
+        entryType: 'domain',
+        campaignId: '',
+        file: null
+      })
+      setUploadDialogOpen(false)
+      
+      // Refresh lists
+      fetchDomainLists()
+
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast({
+        title: "Upload Failed",
+        description: "Failed to process the uploaded file. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const createMediaPlan = () => {
     if (!planForm.name || !planForm.budget || selectedInventory.length === 0) {
       toast({
@@ -193,6 +319,9 @@ export default function MediaPlanning() {
       budget: parseFloat(planForm.budget),
       duration_days: parseInt(planForm.duration_days),
       selected_inventory: [...selectedInventory],
+      domain_lists: [...selectedDomainLists],
+      app_lists: [...selectedAppLists],
+      publisher_lists: [...selectedPublisherLists],
       estimated_reach: estimates.estimatedReach,
       estimated_impressions: estimates.estimatedImpressions,
       estimated_cpm: parseFloat(estimates.avgCPM),
@@ -206,6 +335,9 @@ export default function MediaPlanning() {
     // Reset form
     setPlanForm({ name: '', budget: '', duration_days: '30' })
     setSelectedInventory([])
+    setSelectedDomainLists([])
+    setSelectedAppLists([])
+    setSelectedPublisherLists([])
 
     toast({
       title: "Media Plan Created",
@@ -234,6 +366,7 @@ export default function MediaPlanning() {
         <TabsList>
           <TabsTrigger value="inventory">Browse Inventory</TabsTrigger>
           <TabsTrigger value="planner">Media Planner</TabsTrigger>
+          <TabsTrigger value="lists">Targeting Lists</TabsTrigger>
           <TabsTrigger value="plans">My Plans</TabsTrigger>
         </TabsList>
 
@@ -362,7 +495,7 @@ export default function MediaPlanning() {
 
                 <div>
                   <Label>Select Inventory</Label>
-                  <div className="space-y-2 max-h-60 overflow-y-auto border rounded p-2">
+                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded p-2">
                     {inventory.map((item) => (
                       <div key={item.id} className="flex items-center space-x-2">
                         <input
@@ -383,6 +516,98 @@ export default function MediaPlanning() {
                         </label>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Targeting Lists (Optional)</Label>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm">Domain Lists</Label>
+                      <div className="space-y-1 max-h-32 overflow-y-auto border rounded p-2">
+                        {domainLists.filter(list => list.entry_type === 'domain').map((list) => (
+                          <div key={list.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`domain-${list.id}`}
+                              checked={selectedDomainLists.includes(list.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedDomainLists([...selectedDomainLists, list.id])
+                                } else {
+                                  setSelectedDomainLists(selectedDomainLists.filter(id => id !== list.id))
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <label htmlFor={`domain-${list.id}`} className="text-xs">
+                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'} className="mr-1">
+                                {list.list_type}
+                              </Badge>
+                              {list.value}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm">App Lists</Label>
+                      <div className="space-y-1 max-h-32 overflow-y-auto border rounded p-2">
+                        {domainLists.filter(list => list.entry_type === 'app').map((list) => (
+                          <div key={list.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`app-${list.id}`}
+                              checked={selectedAppLists.includes(list.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedAppLists([...selectedAppLists, list.id])
+                                } else {
+                                  setSelectedAppLists(selectedAppLists.filter(id => id !== list.id))
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <label htmlFor={`app-${list.id}`} className="text-xs">
+                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'} className="mr-1">
+                                {list.list_type}
+                              </Badge>
+                              {list.value}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm">Publisher Lists</Label>
+                      <div className="space-y-1 max-h-32 overflow-y-auto border rounded p-2">
+                        {domainLists.filter(list => list.entry_type === 'site').map((list) => (
+                          <div key={list.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`site-${list.id}`}
+                              checked={selectedPublisherLists.includes(list.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedPublisherLists([...selectedPublisherLists, list.id])
+                                } else {
+                                  setSelectedPublisherLists(selectedPublisherLists.filter(id => id !== list.id))
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <label htmlFor={`site-${list.id}`} className="text-xs">
+                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'} className="mr-1">
+                                {list.list_type}
+                              </Badge>
+                              {list.value}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -420,6 +645,205 @@ export default function MediaPlanning() {
                 </CardContent>
               </Card>
             )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="lists" className="space-y-6">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Targeting Lists</CardTitle>
+                    <CardDescription>Manage domain, app, and publisher lists for targeting</CardDescription>
+                  </div>
+                  <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload List
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Upload Targeting List</DialogTitle>
+                        <DialogDescription>
+                          Upload a CSV or XLS file containing domains, apps, or publisher sites
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="list-type">List Type</Label>
+                          <Select 
+                            value={uploadForm.listType} 
+                            onValueChange={(value: 'allowlist' | 'blocklist') => 
+                              setUploadForm({...uploadForm, listType: value})
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="allowlist">Allowlist (Whitelist)</SelectItem>
+                              <SelectItem value="blocklist">Blocklist (Blacklist)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="entry-type">Entry Type</Label>
+                          <Select 
+                            value={uploadForm.entryType} 
+                            onValueChange={(value: 'domain' | 'app' | 'site') => 
+                              setUploadForm({...uploadForm, entryType: value})
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="domain">Domain</SelectItem>
+                              <SelectItem value="app">App</SelectItem>
+                              <SelectItem value="site">Publisher Site</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="campaign">Campaign (Optional)</Label>
+                          <Select 
+                            value={uploadForm.campaignId} 
+                            onValueChange={(value) => setUploadForm({...uploadForm, campaignId: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select campaign or leave global" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Global (No specific campaign)</SelectItem>
+                              {campaigns.map((campaign) => (
+                                <SelectItem key={campaign.id} value={campaign.id}>
+                                  {campaign.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="file">Upload File</Label>
+                          <Input
+                            id="file"
+                            type="file"
+                            accept=".csv,.xls,.xlsx"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              setUploadForm({...uploadForm, file})
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Supported formats: CSV, XLS, XLSX
+                          </p>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button onClick={handleFileUpload} disabled={!uploadForm.file || uploading} className="flex-1">
+                            {uploading ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload
+                              </>
+                            )}
+                          </Button>
+                          <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="domains" className="space-y-4">
+                  <TabsList>
+                    <TabsTrigger value="domains">Domain Lists</TabsTrigger>
+                    <TabsTrigger value="apps">App Lists</TabsTrigger>
+                    <TabsTrigger value="publishers">Publisher Lists</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="domains" className="space-y-4">
+                    <div className="grid gap-2">
+                      {domainLists
+                        .filter(list => list.entry_type === 'domain')
+                        .map((list) => (
+                          <div key={list.id} className="flex items-center justify-between p-3 border rounded">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
+                                {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
+                                {list.list_type}
+                              </Badge>
+                              <span className="font-medium">{list.value}</span>
+                              <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {list.description}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="apps" className="space-y-4">
+                    <div className="grid gap-2">
+                      {domainLists
+                        .filter(list => list.entry_type === 'app')
+                        .map((list) => (
+                          <div key={list.id} className="flex items-center justify-between p-3 border rounded">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
+                                {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
+                                {list.list_type}
+                              </Badge>
+                              <span className="font-medium">{list.value}</span>
+                              <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {list.description}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="publishers" className="space-y-4">
+                    <div className="grid gap-2">
+                      {domainLists
+                        .filter(list => list.entry_type === 'site')
+                        .map((list) => (
+                          <div key={list.id} className="flex items-center justify-between p-3 border rounded">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
+                                {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
+                                {list.list_type}
+                              </Badge>
+                              <span className="font-medium">{list.value}</span>
+                              <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {list.description}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 

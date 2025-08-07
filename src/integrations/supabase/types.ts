@@ -295,6 +295,68 @@ export type Database = {
         }
         Relationships: []
       }
+      list_uploads: {
+        Row: {
+          campaign_id: string | null
+          entry_type: string
+          error_message: string | null
+          failed_entries: number | null
+          file_name: string
+          file_type: string
+          id: string
+          is_active: boolean
+          list_type: string
+          processed_at: string | null
+          processed_entries: number | null
+          status: string
+          total_entries: number | null
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          entry_type: string
+          error_message?: string | null
+          failed_entries?: number | null
+          file_name: string
+          file_type: string
+          id?: string
+          is_active?: boolean
+          list_type: string
+          processed_at?: string | null
+          processed_entries?: number | null
+          status?: string
+          total_entries?: number | null
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          entry_type?: string
+          error_message?: string | null
+          failed_entries?: number | null
+          file_name?: string
+          file_type?: string
+          id?: string
+          is_active?: boolean
+          list_type?: string
+          processed_at?: string | null
+          processed_entries?: number | null
+          status?: string
+          total_entries?: number | null
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_uploads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meta_campaigns: {
         Row: {
           bid_strategy: string | null
