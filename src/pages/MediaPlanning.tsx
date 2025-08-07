@@ -265,11 +265,25 @@ export default function MediaPlanning() {
         formData.append('campaignId', uploadForm.campaignId)
       }
 
-      const { data, error } = await supabase.functions.invoke('process-list-upload', {
+      // Call the edge function directly with proper headers
+      const response = await fetch(`https://uzcmjulbpmeythxfusrm.supabase.co/functions/v1/process-list-upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
         body: formData
       })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Upload failed: ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.details || 'Upload failed')
+      }
 
       toast({
         title: "File Uploaded Successfully",
@@ -292,7 +306,7 @@ export default function MediaPlanning() {
       console.error('Upload error:', error)
       toast({
         title: "Upload Failed",
-        description: "Failed to process the uploaded file. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to process the uploaded file. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -366,7 +380,7 @@ export default function MediaPlanning() {
         <TabsList>
           <TabsTrigger value="inventory">Browse Inventory</TabsTrigger>
           <TabsTrigger value="planner">Media Planner</TabsTrigger>
-          <TabsTrigger value="lists">Targeting Lists</TabsTrigger>
+          <TabsTrigger value="lists">Lists & Targeting</TabsTrigger>
           <TabsTrigger value="plans">My Plans</TabsTrigger>
         </TabsList>
 
@@ -654,14 +668,14 @@ export default function MediaPlanning() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Targeting Lists</CardTitle>
-                    <CardDescription>Manage domain, app, and publisher lists for targeting</CardDescription>
+                    <CardTitle>Lists & Targeting</CardTitle>
+                    <CardDescription>Upload and manage domain, app, and publisher lists for campaign targeting</CardDescription>
                   </div>
                   <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
                     <DialogTrigger asChild>
                       <Button>
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload List
+                        Upload CSV/XLS
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -768,80 +782,98 @@ export default function MediaPlanning() {
                   </Dialog>
                 </div>
               </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="domains" className="space-y-4">
-                  <TabsList>
-                    <TabsTrigger value="domains">Domain Lists</TabsTrigger>
-                    <TabsTrigger value="apps">App Lists</TabsTrigger>
-                    <TabsTrigger value="publishers">Publisher Lists</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="domains" className="space-y-4">
-                    <div className="grid gap-2">
-                      {domainLists
-                        .filter(list => list.entry_type === 'domain')
-                        .map((list) => (
-                          <div key={list.id} className="flex items-center justify-between p-3 border rounded">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
-                                {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
-                                {list.list_type}
-                              </Badge>
-                              <span className="font-medium">{list.value}</span>
-                              <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+              <CardContent className="space-y-6">
+                {!user ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Please log in to view and manage your targeting lists.</p>
+                  </div>
+                ) : domainLists.length === 0 ? (
+                  <div className="text-center py-8">
+                    <List className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No targeting lists uploaded yet.</p>
+                    <p className="text-sm text-muted-foreground">Upload a CSV or XLS file to get started.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <Shield className="h-5 w-5" />
+                        Domain Lists ({domainLists.filter(list => list.entry_type === 'domain').length})
+                      </h3>
+                      <div className="grid gap-2">
+                        {domainLists
+                          .filter(list => list.entry_type === 'domain')
+                          .map((list) => (
+                            <div key={list.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
+                                  {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
+                                  {list.list_type}
+                                </Badge>
+                                <span className="font-medium">{list.value}</span>
+                                <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {list.description}
+                              </div>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {list.description}
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                      </div>
                     </div>
-                  </TabsContent>
 
-                  <TabsContent value="apps" className="space-y-4">
-                    <div className="grid gap-2">
-                      {domainLists
-                        .filter(list => list.entry_type === 'app')
-                        .map((list) => (
-                          <div key={list.id} className="flex items-center justify-between p-3 border rounded">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
-                                {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
-                                {list.list_type}
-                              </Badge>
-                              <span className="font-medium">{list.value}</span>
-                              <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <List className="h-5 w-5" />
+                        App Lists ({domainLists.filter(list => list.entry_type === 'app').length})
+                      </h3>
+                      <div className="grid gap-2">
+                        {domainLists
+                          .filter(list => list.entry_type === 'app')
+                          .map((list) => (
+                            <div key={list.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
+                                  {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
+                                  {list.list_type}
+                                </Badge>
+                                <span className="font-medium">{list.value}</span>
+                                <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {list.description}
+                              </div>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {list.description}
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                      </div>
                     </div>
-                  </TabsContent>
 
-                  <TabsContent value="publishers" className="space-y-4">
-                    <div className="grid gap-2">
-                      {domainLists
-                        .filter(list => list.entry_type === 'site')
-                        .map((list) => (
-                          <div key={list.id} className="flex items-center justify-between p-3 border rounded">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
-                                {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
-                                {list.list_type}
-                              </Badge>
-                              <span className="font-medium">{list.value}</span>
-                              <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <List className="h-5 w-5" />
+                        Publisher Lists ({domainLists.filter(list => list.entry_type === 'site').length})
+                      </h3>
+                      <div className="grid gap-2">
+                        {domainLists
+                          .filter(list => list.entry_type === 'site')
+                          .map((list) => (
+                            <div key={list.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
+                                  {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
+                                  {list.list_type}
+                                </Badge>
+                                <span className="font-medium">{list.value}</span>
+                                <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {list.description}
+                              </div>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {list.description}
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                      </div>
                     </div>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
