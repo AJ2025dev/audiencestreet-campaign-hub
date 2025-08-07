@@ -65,8 +65,8 @@ export default function MediaPlanning() {
 
   const fetchInventoryData = async () => {
     try {
-      // Call Equativ API via our edge function
-      const { data, error } = await supabase.functions.invoke('fetch-equativ-inventory')
+      // Call TAS API via our edge function
+      const { data, error } = await supabase.functions.invoke('fetch-tas-inventory')
       
       if (error) {
         console.error('Error fetching inventory:', error)
@@ -74,7 +74,7 @@ export default function MediaPlanning() {
         setInventory(getMockInventory())
         toast({
           title: "Using Sample Data",
-          description: "Unable to connect to Equativ API. Showing sample inventory data.",
+          description: "Unable to connect to TAS API. Showing sample inventory data.",
           variant: "default",
         })
       } else {
@@ -85,7 +85,7 @@ export default function MediaPlanning() {
       setInventory(getMockInventory())
       toast({
         title: "Using Sample Data",
-        description: "Unable to connect to Equativ API. Showing sample inventory data.",
+        description: "Unable to connect to TAS API. Showing sample inventory data.",
         variant: "default",
       })
     } finally {
@@ -241,7 +241,7 @@ export default function MediaPlanning() {
           <Card>
             <CardHeader>
               <CardTitle>Available Inventory</CardTitle>
-              <CardDescription>Browse and filter available advertising inventory from Equativ</CardDescription>
+              <CardDescription>Browse and filter available advertising inventory from TAS</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">

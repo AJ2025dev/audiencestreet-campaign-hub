@@ -12,16 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Fetching Equativ inventory data...');
+    console.log('Fetching TAS inventory data...');
     
-    // In a real implementation, you would use the Equativ API
+    // In a real implementation, you would use the TAS API
     // For now, we'll return mock data structure
     const mockInventoryData = {
       success: true,
       inventory: [
         {
-          id: 'eq_001',
-          name: 'Equativ Premium Video Network',
+          id: 'tas_001',
+          name: 'TAS Premium Video Network',
           category: 'video',
           format: 'pre-roll',
           size: '16:9',
@@ -35,8 +35,8 @@ serve(async (req) => {
           viewability_rate: 0.85
         },
         {
-          id: 'eq_002',
-          name: 'Equativ Mobile Display Premium',
+          id: 'tas_002',
+          name: 'TAS Mobile Display Premium',
           category: 'display',
           format: 'banner',
           size: '320x50',
@@ -50,8 +50,8 @@ serve(async (req) => {
           viewability_rate: 0.78
         },
         {
-          id: 'eq_003',
-          name: 'Equativ Connected TV Premium',
+          id: 'tas_003',
+          name: 'TAS Connected TV Premium',
           category: 'video',
           format: 'video',
           size: '16:9',
@@ -65,8 +65,8 @@ serve(async (req) => {
           viewability_rate: 0.92
         },
         {
-          id: 'eq_004',
-          name: 'Equativ Native Content Network',
+          id: 'tas_004',
+          name: 'TAS Native Content Network',
           category: 'native',
           format: 'native',
           size: 'responsive',
@@ -80,8 +80,8 @@ serve(async (req) => {
           viewability_rate: 0.81
         },
         {
-          id: 'eq_005',
-          name: 'Equativ Audio Streaming Premium',
+          id: 'tas_005',
+          name: 'TAS Audio Streaming Premium',
           category: 'audio',
           format: 'audio',
           size: '30s',
