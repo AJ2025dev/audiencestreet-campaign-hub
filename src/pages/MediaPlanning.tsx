@@ -265,24 +265,17 @@ export default function MediaPlanning() {
         formData.append('campaignId', uploadForm.campaignId)
       }
 
-      // Call the edge function directly with proper headers
-      const response = await fetch(`https://uzcmjulbpmeythxfusrm.supabase.co/functions/v1/process-list-upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
+      // Use Supabase function invoke instead of direct fetch
+      const { data, error } = await supabase.functions.invoke('process-list-upload', {
         body: formData
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Upload failed: ${errorText}`)
+      if (error) {
+        throw new Error(error.message || 'Upload failed')
       }
 
-      const data = await response.json()
-
-      if (!data.success) {
-        throw new Error(data.details || 'Upload failed')
+      if (!data?.success) {
+        throw new Error(data?.details || 'Upload failed')
       }
 
       toast({
@@ -794,83 +787,41 @@ export default function MediaPlanning() {
                     <p className="text-sm text-muted-foreground">Upload a CSV or XLS file to get started.</p>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                        <Shield className="h-5 w-5" />
-                        Domain Lists ({domainLists.filter(list => list.entry_type === 'domain').length})
-                      </h3>
-                      <div className="grid gap-2">
-                        {domainLists
-                          .filter(list => list.entry_type === 'domain')
-                          .map((list) => (
-                            <div key={list.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
-                                  {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
-                                  {list.list_type}
-                                </Badge>
-                                <span className="font-medium">{list.value}</span>
-                                <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {list.description}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        Domains: {domainLists.filter(list => list.entry_type === 'domain').length}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <List className="h-3 w-3" />
+                        Apps: {domainLists.filter(list => list.entry_type === 'app').length}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <List className="h-3 w-3" />
+                        Publishers: {domainLists.filter(list => list.entry_type === 'site').length}
+                      </Badge>
                     </div>
-
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                        <List className="h-5 w-5" />
-                        App Lists ({domainLists.filter(list => list.entry_type === 'app').length})
-                      </h3>
-                      <div className="grid gap-2">
-                        {domainLists
-                          .filter(list => list.entry_type === 'app')
-                          .map((list) => (
-                            <div key={list.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
-                                  {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
-                                  {list.list_type}
-                                </Badge>
-                                <span className="font-medium">{list.value}</span>
-                                <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {list.description}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                        <List className="h-5 w-5" />
-                        Publisher Lists ({domainLists.filter(list => list.entry_type === 'site').length})
-                      </h3>
-                      <div className="grid gap-2">
-                        {domainLists
-                          .filter(list => list.entry_type === 'site')
-                          .map((list) => (
-                            <div key={list.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
-                                  {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
-                                  {list.list_type}
-                                </Badge>
-                                <span className="font-medium">{list.value}</span>
-                                <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {list.description}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
+                    
+                    <div className="grid gap-2">
+                      {domainLists.map((list) => (
+                        <div key={list.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Badge variant={list.list_type === 'allowlist' ? 'default' : 'destructive'}>
+                              {list.list_type === 'allowlist' ? <Shield className="mr-1 h-3 w-3" /> : <X className="mr-1 h-3 w-3" />}
+                              {list.list_type}
+                            </Badge>
+                            <Badge variant="secondary" className="capitalize">
+                              {list.entry_type}
+                            </Badge>
+                            <span className="font-medium">{list.value}</span>
+                            <Badge variant="outline">{list.is_global ? 'Global' : 'Campaign'}</Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {list.description}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
