@@ -14,6 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
+      agency_advertisers: {
+        Row: {
+          advertiser_id: string
+          agency_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          advertiser_id: string
+          agency_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          advertiser_id?: string
+          agency_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      campaigns: {
+        Row: {
+          agency_id: string | null
+          budget: number
+          created_at: string
+          daily_budget: number | null
+          description: string | null
+          domain_lists: Json | null
+          end_date: string | null
+          frequency_caps: Json | null
+          id: string
+          name: string
+          start_date: string
+          status: string
+          targeting_config: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          budget: number
+          created_at?: string
+          daily_budget?: number | null
+          description?: string | null
+          domain_lists?: Json | null
+          end_date?: string | null
+          frequency_caps?: Json | null
+          id?: string
+          name: string
+          start_date: string
+          status?: string
+          targeting_config?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          budget?: number
+          created_at?: string
+          daily_budget?: number | null
+          description?: string | null
+          domain_lists?: Json | null
+          end_date?: string | null
+          frequency_caps?: Json | null
+          id?: string
+          name?: string
+          start_date?: string
+          status?: string
+          targeting_config?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      commissions: {
+        Row: {
+          applies_to_user_id: string | null
+          commission_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          percentage: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applies_to_user_id?: string | null
+          commission_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          percentage: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applies_to_user_id?: string | null
+          commission_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          percentage?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       domain_lists: {
         Row: {
           created_at: string | null
@@ -157,7 +268,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { check_user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       user_role: "agency" | "advertiser" | "admin"
