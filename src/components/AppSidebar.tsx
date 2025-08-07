@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BarChart3, Megaphone, Target, TrendingUp, Settings, PlusCircle, Users, Image, Shield } from "lucide-react"
+import { BarChart3, Megaphone, Target, TrendingUp, Settings, PlusCircle, Users, Image, Shield, Handshake, Facebook, Search } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
@@ -25,6 +25,9 @@ const navigationItems = [
   { title: "Creatives", url: "/creatives", icon: Image },
   { title: "Audiences", url: "/audiences", icon: Users },
   { title: "Domain Lists", url: "/domain-lists", icon: Shield },
+  { title: "PMP Deals", url: "/pmp-deals", icon: Handshake },
+  { title: "Meta Ads", url: "/meta-ads", icon: Facebook },
+  { title: "Google Ads", url: "/google-ads", icon: Search },
   { title: "Retail Media", url: "/retail-media", icon: Target },
   { title: "Reports", url: "/reports", icon: TrendingUp },
   { title: "Settings", url: "/settings", icon: Settings },

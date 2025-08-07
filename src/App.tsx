@@ -19,6 +19,9 @@ import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import DomainLists from "./pages/DomainLists";
 import FrequencyCapping from "./pages/FrequencyCapping";
+import PMPDeals from "./pages/PMPDeals";
+import MetaAds from "./pages/MetaAds";
+import GoogleAds from "./pages/GoogleAds";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -106,6 +109,27 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <DomainLists />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pmp-deals" element={
+              <ProtectedRoute>
+                <Layout>
+                  <PMPDeals />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/meta-ads" element={
+              <ProtectedRoute>
+                <Layout>
+                  <MetaAds />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/google-ads" element={
+              <ProtectedRoute>
+                <Layout>
+                  <GoogleAds />
                 </Layout>
               </ProtectedRoute>
             } />

@@ -21,12 +21,20 @@ interface DomainListEntry {
   value: string;
   description?: string;
   is_active: boolean;
+  campaign_id?: string;
+  is_global: boolean;
   created_at: string;
+}
+
+interface Campaign {
+  id: string;
+  name: string;
 }
 
 export default function DomainLists() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<DomainListEntry[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<DomainListEntry | null>(null);
@@ -38,11 +46,14 @@ export default function DomainLists() {
     value: '',
     description: '',
     is_active: true,
+    campaign_id: '',
+    is_global: false,
   });
 
   useEffect(() => {
     if (user) {
       fetchEntries();
+      fetchCampaigns();
     }
   }, [user]);
 
@@ -60,6 +71,20 @@ export default function DomainLists() {
       toast.error('Failed to load domain lists');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCampaigns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      setCampaigns((data as Campaign[]) || []);
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
     }
   };
 
@@ -99,6 +124,8 @@ export default function DomainLists() {
         value: '',
         description: '',
         is_active: true,
+        campaign_id: '',
+        is_global: false,
       });
       fetchEntries();
     } catch (error) {
@@ -146,6 +173,8 @@ export default function DomainLists() {
       value: entry.value,
       description: entry.description || '',
       is_active: entry.is_active,
+      campaign_id: entry.campaign_id || '',
+      is_global: entry.is_global,
     });
     setIsDialogOpen(true);
   };
@@ -179,6 +208,8 @@ export default function DomainLists() {
                 value: '',
                 description: '',
                 is_active: true,
+                campaign_id: '',
+                is_global: false,
               });
             }}>
               <Plus className="h-4 w-4 mr-2" />
@@ -249,6 +280,37 @@ export default function DomainLists() {
                   placeholder="Enter a description..."
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="campaign_id">Link to Campaign (Optional)</Label>
+                  <Select 
+                    value={formData.campaign_id} 
+                    onValueChange={(value) => 
+                      setFormData(prev => ({ ...prev, campaign_id: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select campaign" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No campaign (Global)</SelectItem>
+                      {campaigns.map((campaign) => (
+                        <SelectItem key={campaign.id} value={campaign.id}>
+                          {campaign.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_global"
+                    checked={formData.is_global}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_global: checked }))}
+                  />
+                  <Label htmlFor="is_global">Apply Globally</Label>
+                </div>
+              </div>
               <div className="flex items-center space-x-2">
                 <Switch
                   id="is_active"
@@ -286,6 +348,8 @@ export default function DomainLists() {
                   <TableHead>Type</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Value</TableHead>
+                  <TableHead>Campaign</TableHead>
+                  <TableHead>Scope</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
@@ -303,6 +367,20 @@ export default function DomainLists() {
                       <Badge variant="outline">{entry.entry_type}</Badge>
                     </TableCell>
                     <TableCell className="font-mono">{entry.value}</TableCell>
+                    <TableCell>
+                      {entry.campaign_id ? (
+                        <Badge variant="secondary">
+                          {campaigns.find(c => c.id === entry.campaign_id)?.name || 'Campaign'}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={entry.is_global ? 'default' : 'outline'}>
+                        {entry.is_global ? 'Global' : 'Specific'}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{entry.description || '-'}</TableCell>
                     <TableCell>
                       <Switch

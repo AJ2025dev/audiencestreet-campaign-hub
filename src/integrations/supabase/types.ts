@@ -127,39 +127,53 @@ export type Database = {
       }
       domain_lists: {
         Row: {
+          campaign_id: string | null
           created_at: string | null
           description: string | null
           entry_type: string
           id: string
           is_active: boolean | null
+          is_global: boolean | null
           list_type: string
           updated_at: string | null
           user_id: string
           value: string
         }
         Insert: {
+          campaign_id?: string | null
           created_at?: string | null
           description?: string | null
           entry_type: string
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
           list_type: string
           updated_at?: string | null
           user_id: string
           value: string
         }
         Update: {
+          campaign_id?: string | null
           created_at?: string | null
           description?: string | null
           entry_type?: string
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
           list_type?: string
           updated_at?: string | null
           user_id?: string
           value?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "domain_lists_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       frequency_caps: {
         Row: {
@@ -197,6 +211,60 @@ export type Database = {
         }
         Relationships: []
       }
+      google_campaigns: {
+        Row: {
+          bid_strategy: string | null
+          campaign_name: string
+          campaign_type: string
+          created_at: string
+          creative_config: Json | null
+          daily_budget: number | null
+          end_date: string | null
+          google_campaign_id: string | null
+          id: string
+          margin_percentage: number | null
+          start_date: string | null
+          status: string
+          targeting_config: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bid_strategy?: string | null
+          campaign_name: string
+          campaign_type: string
+          created_at?: string
+          creative_config?: Json | null
+          daily_budget?: number | null
+          end_date?: string | null
+          google_campaign_id?: string | null
+          id?: string
+          margin_percentage?: number | null
+          start_date?: string | null
+          status?: string
+          targeting_config?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bid_strategy?: string | null
+          campaign_name?: string
+          campaign_type?: string
+          created_at?: string
+          creative_config?: Json | null
+          daily_budget?: number | null
+          end_date?: string | null
+          google_campaign_id?: string | null
+          id?: string
+          margin_percentage?: number | null
+          start_date?: string | null
+          status?: string
+          targeting_config?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       impression_tracking: {
         Row: {
           campaign_id: string
@@ -224,6 +292,120 @@ export type Database = {
           impression_count?: number | null
           last_impression?: string | null
           user_identifier?: string
+        }
+        Relationships: []
+      }
+      meta_campaigns: {
+        Row: {
+          bid_strategy: string | null
+          campaign_name: string
+          created_at: string
+          creative_config: Json | null
+          daily_budget: number | null
+          end_date: string | null
+          id: string
+          lifetime_budget: number | null
+          margin_percentage: number | null
+          meta_campaign_id: string | null
+          objective: string
+          start_date: string | null
+          status: string
+          targeting_config: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bid_strategy?: string | null
+          campaign_name: string
+          created_at?: string
+          creative_config?: Json | null
+          daily_budget?: number | null
+          end_date?: string | null
+          id?: string
+          lifetime_budget?: number | null
+          margin_percentage?: number | null
+          meta_campaign_id?: string | null
+          objective: string
+          start_date?: string | null
+          status?: string
+          targeting_config?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bid_strategy?: string | null
+          campaign_name?: string
+          created_at?: string
+          creative_config?: Json | null
+          daily_budget?: number | null
+          end_date?: string | null
+          id?: string
+          lifetime_budget?: number | null
+          margin_percentage?: number | null
+          meta_campaign_id?: string | null
+          objective?: string
+          start_date?: string | null
+          status?: string
+          targeting_config?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pmp_deals: {
+        Row: {
+          created_at: string
+          currency: string | null
+          deal_id: string
+          deal_name: string
+          deal_type: string
+          description: string | null
+          dsp_name: string
+          end_date: string | null
+          floor_price: number | null
+          id: string
+          priority: number | null
+          start_date: string | null
+          status: string
+          targeting_config: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          deal_id: string
+          deal_name: string
+          deal_type?: string
+          description?: string | null
+          dsp_name: string
+          end_date?: string | null
+          floor_price?: number | null
+          id?: string
+          priority?: number | null
+          start_date?: string | null
+          status?: string
+          targeting_config?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          deal_id?: string
+          deal_name?: string
+          deal_type?: string
+          description?: string | null
+          dsp_name?: string
+          end_date?: string | null
+          floor_price?: number | null
+          id?: string
+          priority?: number | null
+          start_date?: string | null
+          status?: string
+          targeting_config?: Json | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
