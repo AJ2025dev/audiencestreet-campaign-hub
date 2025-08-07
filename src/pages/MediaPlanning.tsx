@@ -257,24 +257,34 @@ export default function MediaPlanning() {
 
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', uploadForm.file)
-      formData.append('listType', uploadForm.listType)
-      formData.append('entryType', uploadForm.entryType)
-      if (uploadForm.campaignId) {
-        formData.append('campaignId', uploadForm.campaignId)
-      }
+      // Read file as base64 for proper transmission
+      const fileReader = new FileReader()
+      const fileData = await new Promise<string>((resolve, reject) => {
+        fileReader.onload = () => resolve(fileReader.result as string)
+        fileReader.onerror = reject
+        fileReader.readAsDataURL(uploadForm.file!)
+      })
 
-      // Use Supabase function invoke instead of direct fetch
       const { data, error } = await supabase.functions.invoke('process-list-upload', {
-        body: formData
+        body: {
+          file: {
+            name: uploadForm.file.name,
+            type: uploadForm.file.type,
+            data: fileData
+          },
+          listType: uploadForm.listType,
+          entryType: uploadForm.entryType,
+          campaignId: uploadForm.campaignId || null
+        }
       })
 
       if (error) {
+        console.error('Function error:', error)
         throw new Error(error.message || 'Upload failed')
       }
 
       if (!data?.success) {
+        console.error('Upload failed:', data)
         throw new Error(data?.details || 'Upload failed')
       }
 

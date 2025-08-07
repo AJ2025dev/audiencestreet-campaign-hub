@@ -34,11 +34,8 @@ serve(async (req) => {
       throw new Error('User not authenticated')
     }
 
-    const formData = await req.formData()
-    const file = formData.get('file') as File
-    const listType = formData.get('listType') as string
-    const entryType = formData.get('entryType') as string
-    const campaignId = formData.get('campaignId') as string
+    const requestData = await req.json()
+    const { file, listType, entryType, campaignId } = requestData
 
     if (!file) {
       throw new Error('No file provided')
@@ -46,8 +43,9 @@ serve(async (req) => {
 
     console.log(`Processing ${file.name} for user ${user.id}`)
 
-    // Read file content
-    const fileBuffer = await file.arrayBuffer()
+    // Extract base64 data and convert to buffer
+    const base64Data = file.data.split(',')[1] // Remove data:mime/type;base64, prefix
+    const fileBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
     const fileType = file.name.toLowerCase().endsWith('.csv') ? 'csv' : 'xls'
     
     let entries: string[] = []
@@ -59,7 +57,7 @@ serve(async (req) => {
       entries = lines.map(line => line.trim().split(',')[0]).filter(entry => entry)
     } else {
       // Parse XLS/XLSX
-      const workbook = XLSX.read(fileBuffer, { type: 'buffer' })
+      const workbook = XLSX.read(fileBuffer, { type: 'array' })
       const sheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[sheetName]
       const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][]
@@ -102,7 +100,7 @@ serve(async (req) => {
         entry_type: entryType,
         list_type: listType,
         value: value,
-        description: `Uploaded from ${file.name}`,
+         description: `Uploaded from ${file.name}`,
         campaign_id: campaignId || null,
         is_global: !campaignId,
         is_active: true
