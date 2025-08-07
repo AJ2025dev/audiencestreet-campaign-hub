@@ -18,6 +18,8 @@ import Reports from "./pages/Reports";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import DomainLists from "./pages/DomainLists";
+import AppLists from "./pages/AppLists";
+import PublisherLists from "./pages/PublisherLists";
 import FrequencyCapping from "./pages/FrequencyCapping";
 import PMPDeals from "./pages/PMPDeals";
 import MetaAds from "./pages/MetaAds";
@@ -110,6 +112,20 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <DomainLists />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/app-lists" element={
+              <ProtectedRoute>
+                <Layout>
+                  <AppLists />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/publisher-lists" element={
+              <ProtectedRoute>
+                <Layout>
+                  <PublisherLists />
                 </Layout>
               </ProtectedRoute>
             } />
