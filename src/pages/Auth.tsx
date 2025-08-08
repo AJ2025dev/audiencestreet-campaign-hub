@@ -61,7 +61,8 @@ export default function Auth() {
       });
 
       if (error) {
-        toast.error(error.message);
+        console.error('Sign-in error:', error);
+        toast.error(`Sign-in failed: ${error.message}`);
       } else {
         toast.success('Signed in successfully!');
       }
