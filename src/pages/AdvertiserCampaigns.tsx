@@ -16,12 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-// Static fallback data for advertisers
-const advertiserData: Record<string, { name: string; industry: string }> = {
-  "1": { name: "TechCorp Solutions", industry: "Technology" },
-  "2": { name: "Fashion Forward", industry: "Retail" },
-  "3": { name: "EcoGreen Products", industry: "Environment" },
-}
+// Remove static advertiser data; advertiser details will be fetched from Supabase
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -40,6 +35,7 @@ export function AdvertiserCampaigns() {
   const [searchTerm, setSearchTerm] = useState("")
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [advertiserProfile, setAdvertiserProfile] = useState<{ company_name: string; contact_email: string | null } | null>(null)
 
   // Fetch campaigns for this advertiser from Supabase
   useEffect(() => {
@@ -68,7 +64,27 @@ export function AdvertiserCampaigns() {
     fetchCampaigns()
   }, [advertiserId])
 
-  const advertiser = advertiserData[advertiserId || '1']
+  // Fetch advertiser profile details
+  useEffect(() => {
+    const fetchAdvertiser = async () => {
+      if (!advertiserId) return
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('company_name, contact_email')
+          .eq('user_id', advertiserId)
+          .maybeSingle()
+        if (error) throw error
+        setAdvertiserProfile(data || null)
+      } catch (err) {
+        console.error('Error fetching advertiser profile:', err)
+      }
+    }
+    fetchAdvertiser()
+  }, [advertiserId])
+
+  // Use the fetched advertiser profile; fall back to unknown name
+  const advertiser = advertiserProfile || { company_name: 'Unknown Advertiser', contact_email: null }
   const filteredCampaigns = campaigns.filter((campaign) =>
     campaign.name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -97,8 +113,8 @@ export function AdvertiserCampaigns() {
             <Building className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">{advertiser?.name}</h1>
-            <p className="text-muted-foreground">{advertiser?.industry} • Campaigns</p>
+            <h1 className="text-3xl font-bold">{advertiser.company_name}</h1>
+            <p className="text-muted-foreground">{advertiser.contact_email || ''} • Campaigns</p>
           </div>
         </div>
         <Button onClick={handleCreateCampaign}>

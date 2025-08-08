@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Search, MoreHorizontal, Building, Edit, Trash2, Eye } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -30,39 +30,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-// Mock data for advertisers
-const advertisersData = [
-  {
-    id: 1,
-    name: "TechCorp Solutions",
-    industry: "Technology",
-    status: "Active",
-    campaigns: 12,
-    totalSpend: "$125,000",
-    contactEmail: "marketing@techcorp.com",
-    description: "Leading technology solutions provider",
-  },
-  {
-    id: 2,
-    name: "Fashion Forward",
-    industry: "Retail",
-    status: "Active", 
-    campaigns: 8,
-    totalSpend: "$89,500",
-    contactEmail: "ads@fashionforward.com",
-    description: "Trendy fashion and lifestyle brand",
-  },
-  {
-    id: 3,
-    name: "EcoGreen Products",
-    industry: "Environment",
-    status: "Paused",
-    campaigns: 3,
-    totalSpend: "$45,200",
-    contactEmail: "green@ecogreen.com", 
-    description: "Sustainable and eco-friendly products",
-  },
-]
+import { supabase } from '@/integrations/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+
+// Type definitions for advertiser profile with aggregated stats
+interface Advertiser {
+  id: string
+  user_id: string
+  company_name: string
+  contact_email: string | null
+  campaignsCount: number
+  totalSpend: number
+}
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -75,28 +54,133 @@ const getStatusColor = (status: string) => {
 
 export function Advertisers() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
-    industry: "",
+    companyName: "",
     contactEmail: "",
     description: "",
   })
+  const [advertisers, setAdvertisers] = useState<Advertiser[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const filteredAdvertisers = advertisersData.filter(advertiser =>
-    advertiser.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    advertiser.industry.toLowerCase().includes(searchTerm.toLowerCase())
+  // Fetch advertisers and compute stats on mount
+  useEffect(() => {
+    const fetchAdvertisers = async () => {
+      if (!user) return
+      try {
+        // Get all profiles with role 'advertiser'
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, user_id, company_name, contact_email, role')
+          .eq('role', 'advertiser')
+
+        if (profilesError) throw profilesError
+
+        // For each advertiser compute campaigns count and spend
+        const advertisersWithStats: Advertiser[] = await Promise.all(
+          (profiles || []).map(async (p: any) => {
+            let campaignsCount = 0
+            let totalSpend = 0
+            // Fetch campaigns for this advertiser
+            const { data: campaigns, error: campaignsError } = await supabase
+              .from('campaigns')
+              .select('id, budget')
+              .eq('user_id', p.user_id)
+
+            if (!campaignsError && campaigns) {
+              campaignsCount = campaigns.length
+              totalSpend = campaigns.reduce((sum: number, c: any) => sum + (c.budget || 0), 0)
+            }
+            return {
+              id: p.id,
+              user_id: p.user_id,
+              company_name: p.company_name,
+              contact_email: p.contact_email,
+              campaignsCount,
+              totalSpend,
+            }
+          })
+        )
+        setAdvertisers(advertisersWithStats)
+      } catch (err) {
+        console.error('Error fetching advertisers:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAdvertisers()
+  }, [user])
+
+  const filteredAdvertisers = advertisers.filter(advertiser =>
+    advertiser.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (advertiser.contact_email || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleCreateAdvertiser = () => {
-    console.log("Creating advertiser:", formData)
-    setIsCreateDialogOpen(false)
-    setFormData({ name: "", industry: "", contactEmail: "", description: "" })
+  const handleCreateAdvertiser = async () => {
+    // Note: creating an advertiser means creating a profile with role 'advertiser'.
+    // This simplified implementation does not create an associated Supabase user.
+    try {
+      const { error } = await supabase.from('profiles').insert({
+        company_name: formData.companyName,
+        contact_email: formData.contactEmail,
+        role: 'advertiser',
+        user_id: user?.id || '',
+        // Additional fields like description can be stored in a separate table
+      })
+      if (error) throw error
+      // Refetch advertisers list
+      setFormData({ companyName: '', contactEmail: '', description: '' })
+      setIsCreateDialogOpen(false)
+      // Note: we call fetchAdvertisers again by updating effect dependencies
+      setLoading(true)
+      // Immediately fetch new list
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, user_id, company_name, contact_email, role')
+        .eq('role', 'advertiser')
+      // Skip computing campaigns for brevity; use current campaigns data
+      if (profiles) {
+        const advertisersWithStats: Advertiser[] = await Promise.all(
+          profiles.map(async (p: any) => {
+            let campaignsCount = 0
+            let totalSpend = 0
+            const { data: campaigns } = await supabase
+              .from('campaigns')
+              .select('id, budget')
+              .eq('user_id', p.user_id)
+            if (campaigns) {
+              campaignsCount = campaigns.length
+              totalSpend = campaigns.reduce((sum: number, c: any) => sum + (c.budget || 0), 0)
+            }
+            return {
+              id: p.id,
+              user_id: p.user_id,
+              company_name: p.company_name,
+              contact_email: p.contact_email,
+              campaignsCount,
+              totalSpend,
+            }
+          })
+        )
+        setAdvertisers(advertisersWithStats)
+      }
+    } catch (err) {
+      console.error('Error creating advertiser:', err)
+    }
   }
 
-  const handleViewCampaigns = (advertiserId: number) => {
-    navigate(`/advertisers/${advertiserId}/campaigns`)
+  const handleViewCampaigns = (advertiserUserId: string) => {
+    navigate(`/advertisers/${advertiserUserId}/campaigns`)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
   }
 
   return (
@@ -143,8 +227,8 @@ export function Advertisers() {
                     <Building className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">{advertiser.name}</CardTitle>
-                    <CardDescription>{advertiser.industry}</CardDescription>
+                    <CardTitle className="text-lg">{advertiser.company_name}</CardTitle>
+                    <CardDescription>{advertiser.contact_email || 'No contact'}</CardDescription>
                   </div>
                 </div>
                 <DropdownMenu>
@@ -154,7 +238,7 @@ export function Advertisers() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleViewCampaigns(advertiser.id)}>
+                    <DropdownMenuItem onClick={() => handleViewCampaigns(advertiser.user_id)}>
                       <Eye className="h-4 w-4 mr-2" />
                       View Campaigns
                     </DropdownMenuItem>
@@ -173,19 +257,18 @@ export function Advertisers() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Status</span>
-                <Badge className={getStatusColor(advertiser.status)}>
-                  {advertiser.status}
-                </Badge>
+                {/* In a real application advertiser statuses could be stored in a separate field. */}
+                <Badge className={getStatusColor('Active')}>Active</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Campaigns</span>
-                <span className="font-medium">{advertiser.campaigns}</span>
+                <span className="font-medium">{advertiser.campaignsCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total Spend</span>
-                <span className="font-medium">{advertiser.totalSpend}</span>
+                <span className="font-medium">${advertiser.totalSpend.toLocaleString()}</span>
               </div>
-              <p className="text-sm text-muted-foreground">{advertiser.description}</p>
+              {/* Additional description could be shown here if stored */}
               <Button 
                 className="w-full" 
                 variant="outline"
@@ -209,31 +292,13 @@ export function Advertisers() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Advertiser Name</Label>
+              <Label htmlFor="companyName">Advertiser Name</Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                id="companyName"
+                value={formData.companyName}
+                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                 placeholder="Enter advertiser name"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="industry">Industry</Label>
-              <Select value={formData.industry} onValueChange={(value) => setFormData({ ...formData, industry: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="technology">Technology</SelectItem>
-                  <SelectItem value="retail">Retail</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="healthcare">Healthcare</SelectItem>
-                  <SelectItem value="environment">Environment</SelectItem>
-                  <SelectItem value="automotive">Automotive</SelectItem>
-                  <SelectItem value="food">Food & Beverage</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Contact Email</Label>
