@@ -2,6 +2,7 @@ import React from 'react';
 import TestRunner from '@/components/TestRunner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/StatusBadge';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Code, 
@@ -131,34 +132,79 @@ const TestDashboard: React.FC = () => {
         {/* Test Documentation */}
         <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
           <CardHeader>
-            <CardTitle>Test Case Documentation</CardTitle>
+            <CardTitle>End-to-End Test Scenarios Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Advertiser Management</h4>
+                  <p className="text-sm text-muted-foreground">Create and manage advertiser accounts</p>
+                </div>
+                <StatusBadge status="partial" text="Mock Data Only" />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Campaign Creation & Persistence</h4>
+                  <p className="text-sm text-muted-foreground">Launch campaigns and verify data persistence</p>
+                </div>
+                <StatusBadge status="partial" text="UI Complete, No DB" />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Domain Lists Management</h4>
+                  <p className="text-sm text-muted-foreground">Add/edit domain allowlist entries</p>
+                </div>
+                <StatusBadge status="working" text="Fully Functional" />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Dynamic Dashboard Stats</h4>
+                  <p className="text-sm text-muted-foreground">Aggregated metrics from real campaign data</p>
+                </div>
+                <StatusBadge status="partial" text="Static Mock Data" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Additional Documentation */}
+        <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+          <CardHeader>
+            <CardTitle>Implementation Guide</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <h4>GitHub Changes Being Tested:</h4>
+              <h4>Current Implementation Status:</h4>
               <ul>
-                <li>Enhanced error logging in authentication flow</li>
-                <li>Improved console error reporting</li>
-                <li>Better error message formatting for users</li>
-                <li>Real-time deployment verification</li>
+                <li><strong>✅ Working:</strong> Authentication, Domain Lists, Real-time features, GitHub changes</li>
+                <li><strong>⚠️ Partial:</strong> Advertisers (UI only), Campaigns (UI only), Dashboard (static data)</li>
+                <li><strong>❌ Missing:</strong> Supabase integration for Advertisers and Campaigns CRUD</li>
               </ul>
               
-              <h4>Test Categories:</h4>
+              <h4>To Complete Full E2E Testing:</h4>
+              <ol>
+                <li><strong>Connect Advertisers to Database:</strong> Replace mock data with Supabase queries</li>
+                <li><strong>Connect Campaigns to Database:</strong> Implement full campaign CRUD operations</li>
+                <li><strong>Make Dashboard Dynamic:</strong> Calculate metrics from real campaign data</li>
+              </ol>
+              
+              <h4>Test Execution:</h4>
               <ul>
-                <li><strong>Authentication:</strong> User login, profile loading, session management</li>
-                <li><strong>Dashboard:</strong> Metrics display, chart rendering, data visualization</li>
-                <li><strong>API:</strong> Database connections, Supabase integration</li>
-                <li><strong>Real-time:</strong> WebSocket connections, live updates</li>
-                <li><strong>Security:</strong> Role-based permissions, access control</li>
+                <li>🔧 Use <strong>Test Dashboard</strong> for automated validation</li>
+                <li>📊 Navigate to specific pages to test individual features</li>
+                <li>🔍 Check browser console for detailed test logging</li>
+                <li>📋 Review <code>IMPLEMENTATION_STATUS.md</code> for detailed status</li>
               </ul>
 
-              <h4>How to Use:</h4>
-              <ol>
-                <li>Click "Run All Tests" to execute the complete test suite</li>
-                <li>Monitor the browser console for detailed test logs</li>
-                <li>Individual tests can be run by clicking "Run" next to each test</li>
-                <li>Test results are displayed with status icons and timing information</li>
-              </ol>
+              <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <p className="text-sm font-medium">
+                  <strong>Ready to Test Now:</strong> Domain Lists Management (fully functional E2E scenario)
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

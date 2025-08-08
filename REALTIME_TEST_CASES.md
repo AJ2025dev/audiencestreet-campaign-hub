@@ -5,6 +5,103 @@
 - **Current Route**: `/auth`
 - **Test Date**: 2025-08-08
 - **Status**: Active testing of GitHub changes integration
+- **Test Dashboard**: Available at `/test-dashboard` for automated testing
+
+## 🚀 End-to-End User Scenarios (Priority Tests)
+
+### Test Case 1: Advertiser Management
+**Scenario**: Create a new advertiser and verify it appears in the list
+**Status**: ⚠️ PARTIALLY IMPLEMENTED - Uses mock data, needs Supabase integration
+**Steps**:
+1. Sign in to the application
+2. Navigate to **Advertisers** page (`/advertisers`)
+3. Click "Create Advertiser" button
+4. Fill form:
+   - Company name: `Test Corp Inc`
+   - Industry: `Technology`
+   - Contact email: `test@testcorp.com`
+   - Description: `Test advertiser for E2E validation`
+5. Click "Create Advertiser"
+6. Verify new advertiser appears in grid with:
+   - Campaigns = 0
+   - Total Spend = $0
+   - Company name and email displayed (not placeholder values)
+
+**Expected Results**:
+- ✅ Form displays correctly
+- ⚠️ Currently only logs to console, doesn't persist to database
+- ⚠️ Uses hardcoded mock data in display
+- **NEEDS**: Supabase integration for advertiser CRUD operations
+
+### Test Case 2: Campaign Creation and Persistence  
+**Scenario**: Launch a campaign for an advertiser
+**Status**: ⚠️ PARTIALLY IMPLEMENTED - Uses mock data, needs Supabase integration
+**Steps**:
+1. From Advertisers page, click "View Campaigns" for any advertiser
+2. Navigate to `/advertisers/{id}/campaigns`
+3. Click "Create Campaign"
+4. Fill required fields:
+   - Name: `Q1 2025 Brand Campaign`
+   - Objective: `Brand Awareness`
+   - Budget: `$25,000`
+   - Daily Budget: `$1,000`
+   - Start Date: Current date
+   - End Date: 3 months from now
+   - Select DSPs/SSPs
+5. Generate campaign strategy with AI button
+6. Click "Launch Campaign"
+7. Verify campaign appears in campaigns table
+
+**Expected Results**:
+- ✅ Campaign creation form exists
+- ⚠️ Currently uses mock data display
+- ⚠️ No actual persistence to Supabase campaigns table
+- **NEEDS**: Full Supabase integration for campaigns CRUD
+
+### Test Case 3: Domain Lists Management
+**Scenario**: Add and edit domain allowlist entry
+**Status**: ✅ FULLY IMPLEMENTED - Connected to Supabase
+**Steps**:
+1. Navigate to **Domain Lists** page (`/domain-lists`)
+2. Click "Add Entry" button
+3. Configure entry:
+   - List Type: `allowlist`
+   - Entry Type: `domain`
+   - Value: `example.com`
+   - Description: `Test domain for validation`
+   - Apply Globally: `true`
+   - Active: `true`
+4. Click "Add Entry"
+5. Verify entry appears in table
+6. Toggle Active status on/off
+7. Click Edit button, modify domain to `updated-example.com`
+8. Save changes and verify update
+
+**Expected Results**:
+- ✅ Fully functional with Supabase integration
+- ✅ Real-time updates and persistence
+- ✅ Toggle functionality works
+- ✅ Edit functionality works
+- ✅ No hardcoded mock data
+
+### Test Case 4: Dynamic Advertiser and Campaign Stats
+**Scenario**: Check aggregated metrics on dashboard
+**Status**: ⚠️ PARTIALLY IMPLEMENTED - Uses static mock data
+**Steps**:
+1. After creating campaigns with different budgets, go to Dashboard (`/`)
+2. Check summary cards:
+   - Total Spend
+   - Impressions  
+   - Clicks
+   - CTR
+3. Verify "Recent Campaigns" table shows latest campaigns
+4. Confirm metrics reflect actual data, not static values
+
+**Expected Results**:
+- ✅ Dashboard displays metrics
+- ⚠️ Currently shows static mock data
+- ⚠️ Not connected to real campaign/advertiser data
+- **NEEDS**: Integration with campaigns table for dynamic stats
 
 ## 🔐 Authentication Test Scenarios
 
