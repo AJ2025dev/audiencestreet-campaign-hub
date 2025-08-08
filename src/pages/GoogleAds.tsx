@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Trash2, Plus, Edit, Play, Pause, Search } from 'lucide-react';
+import PlatformCredentials from '@/components/PlatformCredentials';
 
 interface GoogleCampaign {
   id: string;
@@ -48,7 +49,7 @@ const BID_STRATEGIES = [
 ];
 
 export default function GoogleAds() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [campaigns, setCampaigns] = useState<GoogleCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -302,18 +303,20 @@ export default function GoogleAds() {
                     placeholder="0.00"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="margin_percentage">Margin (%)</Label>
-                  <Input
-                    id="margin_percentage"
-                    type="number"
-                    step="0.1"
-                    value={formData.margin_percentage}
-                    onChange={(e) => setFormData(prev => ({ ...prev, margin_percentage: e.target.value }))}
-                    placeholder="10"
-                    required
-                  />
-                </div>
+{profile?.role === 'admin' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="margin_percentage">Margin (%) - Admin Only</Label>
+                    <Input
+                      id="margin_percentage"
+                      type="number"
+                      step="0.1"
+                      value={formData.margin_percentage}
+                      onChange={(e) => setFormData(prev => ({ ...prev, margin_percentage: e.target.value }))}
+                      placeholder="10"
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -367,7 +370,7 @@ export default function GoogleAds() {
                   <TableHead>Type</TableHead>
                   <TableHead>Daily Budget</TableHead>
                   <TableHead>Bid Strategy</TableHead>
-                  <TableHead>Margin</TableHead>
+                  {profile?.role === 'admin' && <TableHead>Margin</TableHead>}
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -387,9 +390,11 @@ export default function GoogleAds() {
                         {campaign.bid_strategy?.replace(/_/g, ' ') || '-'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{campaign.margin_percentage}%</Badge>
-                    </TableCell>
+{profile?.role === 'admin' && (
+                      <TableCell>
+                        <Badge variant="secondary">{campaign.margin_percentage}%</Badge>
+                      </TableCell>
+                    )}
                     <TableCell>{getStatusBadge(campaign.status)}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
@@ -426,6 +431,8 @@ export default function GoogleAds() {
           )}
         </CardContent>
       </Card>
+
+      <PlatformCredentials platform="google" title="Google Ads" />
     </div>
   );
 }

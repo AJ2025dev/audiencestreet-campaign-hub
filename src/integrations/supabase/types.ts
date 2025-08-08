@@ -414,6 +414,54 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_credentials: {
+        Row: {
+          access_token: string | null
+          account_id: string | null
+          api_key: string | null
+          client_id: string | null
+          client_secret: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          merchant_id: string | null
+          platform: string
+          refresh_token: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          account_id?: string | null
+          api_key?: string | null
+          client_id?: string | null
+          client_secret?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          merchant_id?: string | null
+          platform: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          account_id?: string | null
+          api_key?: string | null
+          client_id?: string | null
+          client_secret?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          merchant_id?: string | null
+          platform?: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pmp_deals: {
         Row: {
           created_at: string
