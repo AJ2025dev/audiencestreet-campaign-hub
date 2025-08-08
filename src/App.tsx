@@ -25,6 +25,7 @@ import PMPDeals from "./pages/PMPDeals";
 import MetaAds from "./pages/MetaAds";
 import GoogleAds from "./pages/GoogleAds";
 import MediaPlanning from "./pages/MediaPlanning";
+import TestDashboard from "./pages/TestDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -161,6 +162,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <FrequencyCapping />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/test-dashboard" element={
+              <ProtectedRoute>
+                <Layout>
+                  <TestDashboard />
                 </Layout>
               </ProtectedRoute>
             } />

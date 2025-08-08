@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BarChart3, Megaphone, Target, TrendingUp, Settings, PlusCircle, Users, Image, Shield, Handshake, Facebook, Search, Smartphone, Globe } from "lucide-react"
+import { BarChart3, Megaphone, Target, TrendingUp, Settings, PlusCircle, Users, Image, Shield, Handshake, Facebook, Search, Smartphone, Globe, TestTube } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
@@ -127,6 +127,27 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-muted-foreground px-3 py-2">
+            Testing & Development
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/test-dashboard" 
+                    className={getNavCls({ isActive: isActive("/test-dashboard") })}
+                  >
+                    <TestTube className="h-4 w-4" />
+                    {!collapsed && <span>Test Dashboard</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
