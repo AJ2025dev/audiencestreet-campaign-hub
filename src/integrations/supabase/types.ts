@@ -600,16 +600,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_user_metrics: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          user_id: string
-          total_impressions: number
-          total_clicks: number
-          total_spend_cents: number
-          ctr_percent: number
-        }[]
-      }
       get_user_role: {
         Args: { check_user_id: string }
         Returns: string
