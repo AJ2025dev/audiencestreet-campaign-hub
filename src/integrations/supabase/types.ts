@@ -92,6 +92,30 @@ export type Database = {
         }
         Relationships: []
       }
+      clicks: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+          user_identifier: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+          user_identifier: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          user_identifier?: string
+        }
+        Relationships: []
+      }
       commissions: {
         Row: {
           applies_to_user_id: string | null
@@ -273,6 +297,7 @@ export type Database = {
           id: string
           impression_count: number | null
           last_impression: string | null
+          spend_cents: number | null
           user_identifier: string
         }
         Insert: {
@@ -282,6 +307,7 @@ export type Database = {
           id?: string
           impression_count?: number | null
           last_impression?: string | null
+          spend_cents?: number | null
           user_identifier: string
         }
         Update: {
@@ -291,6 +317,7 @@ export type Database = {
           id?: string
           impression_count?: number | null
           last_impression?: string | null
+          spend_cents?: number | null
           user_identifier?: string
         }
         Relationships: []
@@ -557,12 +584,49 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_metrics_summary: {
+        Row: {
+          ctr_percent: number | null
+          total_clicks: number | null
+          total_impressions: number | null
+          total_spend_cents: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_current_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          total_impressions: number
+          total_clicks: number
+          total_spend_cents: number
+          ctr_percent: number
+        }[]
+      }
       get_user_role: {
         Args: { check_user_id: string }
         Returns: string
+      }
+      update_campaign_budget: {
+        Args: {
+          p_campaign_id: string
+          p_budget: number
+          p_daily_budget: number
+          p_start_date: string
+          p_end_date: string
+        }
+        Returns: undefined
+      }
+      update_campaign_status: {
+        Args: { p_campaign_id: string; p_status: string }
+        Returns: undefined
       }
     }
     Enums: {
