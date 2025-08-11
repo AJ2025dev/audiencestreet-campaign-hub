@@ -1,95 +1,160 @@
-import { useState } from "react"
-import { ArrowLeft, Plus, Search, MoreHorizontal, Play, Pause, Edit, Copy, Trash2, Building } from "lucide-react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useMemo, useState } from "react";
+import { ArrowLeft, Plus, Search, MoreHorizontal, Play, Pause, Edit, Trash2, Building } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/sonner";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
-// Mock data
-const advertiserData = {
-  1: { name: "TechCorp Solutions", industry: "Technology" },
-  2: { name: "Fashion Forward", industry: "Retail" },
-  3: { name: "EcoGreen Products", industry: "Environment" },
+interface Profile { user_id: string; company_name: string; role: string }
+interface CampaignRow {
+  id: string;
+  user_id: string;
+  name: string;
+  status: string;
+  budget: number;
+  daily_budget?: number | null;
+  start_date: string;
+  end_date?: string | null;
+  created_at: string;
 }
-
-const campaignsData = [
-  {
-    id: 1,
-    name: "Summer Tech Sale 2024",
-    status: "Active",
-    budget: "$25,000",
-    spend: "$18,450",
-    impressions: "2.4M",
-    clicks: "48K",
-    ctr: "2.0%",
-    startDate: "2024-06-01",
-    endDate: "2024-08-31",
-    advertiserId: 1,
-  },
-  {
-    id: 2,
-    name: "Back to School Campaign",
-    status: "Paused",
-    budget: "$15,000",
-    spend: "$12,300",
-    impressions: "1.8M",
-    clicks: "32K",
-    ctr: "1.8%",
-    startDate: "2024-07-15",
-    endDate: "2024-09-15",
-    advertiserId: 1,
-  },
-  {
-    id: 3,
-    name: "Fashion Week Promo",
-    status: "Active",
-    budget: "$30,000",
-    spend: "$22,100",
-    impressions: "3.1M",
-    clicks: "65K",
-    ctr: "2.1%",
-    startDate: "2024-09-01",
-    endDate: "2024-09-30",
-    advertiserId: 2,
-  },
-]
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "Active": return "bg-green-100 text-green-800"
-    case "Paused": return "bg-yellow-100 text-yellow-800"
-    case "Completed": return "bg-blue-100 text-blue-800"
-    case "Draft": return "bg-gray-100 text-gray-800"
-    default: return "bg-gray-100 text-gray-800"
+    case "active": return "bg-success";
+    case "paused": return "bg-warning";
+    case "completed": return "bg-primary";
+    case "draft": return "bg-muted";
+    default: return "bg-secondary";
   }
 }
 
 export function AdvertiserCampaigns() {
-  const navigate = useNavigate()
-  const { advertiserId } = useParams()
-  const [searchTerm, setSearchTerm] = useState("")
+  const navigate = useNavigate();
+  const { advertiserId } = useParams();
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const uid = advertiserId ?? user?.id ?? "";
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const advertiser = advertiserData[parseInt(advertiserId || "1") as keyof typeof advertiserData]
-  const advertiserCampaigns = campaignsData.filter(campaign => 
-    campaign.advertiserId === parseInt(advertiserId || "1") &&
-    campaign.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const { data: advertiser } = useQuery({
+    queryKey: ["profile", uid],
+    enabled: !!uid,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("company_name, role, user_id").eq("user_id", uid).maybeSingle();
+      if (error) throw error;
+      return data as Profile | null;
+    }
+  });
+
+  const { data: campaigns, isLoading } = useQuery({
+    queryKey: ["campaigns", uid],
+    enabled: !!uid,
+    queryFn: async (): Promise<CampaignRow[]> => {
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("id, user_id, name, status, budget, daily_budget, start_date, end_date, created_at")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as CampaignRow[];
+    }
+  });
+
+  const filtered = useMemo(() => {
+    if (!campaigns) return [];
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return campaigns;
+    return campaigns.filter((c) => c.name.toLowerCase().includes(q));
+  }, [campaigns, searchTerm]);
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, next }: { id: string; next: string }) => {
+      const { error } = await supabase.rpc("update_campaign_status", {
+        p_campaign_id: id,
+        p_status: next,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["campaigns", uid] });
+      toast.success("Campaign status updated");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update status"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("campaigns").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["campaigns", uid] });
+      toast.success("Campaign deleted");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to delete"),
+  });
+
+  const [editing, setEditing] = useState<CampaignRow | null>(null);
+  const [form, setForm] = useState({ budget: "", daily_budget: "", start_date: "", end_date: "" });
+  const openEdit = (c: CampaignRow) => {
+    setEditing(c);
+    setForm({
+      budget: String(c.budget ?? ""),
+      daily_budget: String(c.daily_budget ?? ""),
+      start_date: c.start_date?.slice(0, 10) ?? "",
+      end_date: c.end_date ? c.end_date.slice(0, 10) : "",
+    });
+  };
+
+  const budgetMutation = useMutation({
+    mutationFn: async () => {
+      if (!editing) return;
+      const budget = Number(form.budget);
+      const daily = form.daily_budget ? Number(form.daily_budget) : null;
+      const start = form.start_date ? new Date(form.start_date).toISOString() : null;
+      const end = form.end_date ? new Date(form.end_date).toISOString() : null;
+      if (!isFinite(budget) || budget < 0) throw new Error("Invalid budget");
+      if (daily !== null && (!isFinite(daily) || daily < 0)) throw new Error("Invalid daily budget");
+      if (!start) throw new Error("Start date is required");
+      if (end && new Date(end) < new Date(start)) throw new Error("End date must be after start date");
+      const { error } = await supabase.rpc("update_campaign_budget", {
+        p_campaign_id: editing.id,
+        p_budget: budget,
+        p_daily_budget: daily,
+        p_start_date: start,
+        p_end_date: end,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["campaigns", uid] });
+      toast.success("Campaign updated");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update campaign"),
+  });
 
   const handleCreateCampaign = () => {
-    navigate(`/advertisers/${advertiserId}/campaigns/create`)
-  }
+    navigate(`/advertisers/${uid}/campaigns/create`);
+  };
 
-  const handleViewCampaign = (campaignId: number) => {
-    navigate(`/advertisers/${advertiserId}/campaigns/${campaignId}`)
-  }
+  const handleViewCampaign = (campaignId: string) => {
+    navigate(`/advertisers/${uid}/campaigns/${campaignId}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -107,8 +172,8 @@ export function AdvertiserCampaigns() {
             <Building className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">{advertiser?.name}</h1>
-            <p className="text-muted-foreground">{advertiser?.industry} • Campaigns</p>
+            <h1 className="text-3xl font-bold">{advertiser?.company_name ?? 'Advertiser'}</h1>
+            <p className="text-muted-foreground">Campaigns</p>
           </div>
         </div>
         <Button onClick={handleCreateCampaign}>
@@ -150,24 +215,26 @@ export function AdvertiserCampaigns() {
                   <th className="text-left py-3 px-4">Campaign</th>
                   <th className="text-left py-3 px-4">Status</th>
                   <th className="text-left py-3 px-4">Budget</th>
-                  <th className="text-left py-3 px-4">Spend</th>
-                  <th className="text-left py-3 px-4">Impressions</th>
-                  <th className="text-left py-3 px-4">Clicks</th>
-                  <th className="text-left py-3 px-4">CTR</th>
+                  <th className="text-left py-3 px-4">Daily</th>
+                  <th className="text-left py-3 px-4">Start</th>
+                  <th className="text-left py-3 px-4">End</th>
                   <th className="text-left py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {advertiserCampaigns.map((campaign) => (
+                {isLoading ? (
+                  <tr><td className="py-6 px-4 text-muted-foreground" colSpan={7}>Loading campaigns...</td></tr>
+                ) : filtered.length === 0 ? (
+                  <tr><td className="py-6 px-4 text-muted-foreground" colSpan={7}>No campaigns found</td></tr>
+                ) : filtered.map((campaign) => (
                   <tr key={campaign.id} className="border-b hover:bg-muted/50">
                     <td className="py-3 px-4">
                       <div>
-                        <div className="font-medium cursor-pointer hover:text-primary" 
-                             onClick={() => handleViewCampaign(campaign.id)}>
+                        <div className="font-medium cursor-pointer hover:text-primary" onClick={() => handleViewCampaign(campaign.id)}>
                           {campaign.name}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {campaign.startDate} - {campaign.endDate}
+                          {campaign.start_date?.slice(0,10)} - {campaign.end_date ? campaign.end_date.slice(0,10) : '—'}
                         </div>
                       </div>
                     </td>
@@ -176,11 +243,10 @@ export function AdvertiserCampaigns() {
                         {campaign.status}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 font-medium">{campaign.budget}</td>
-                    <td className="py-3 px-4">{campaign.spend}</td>
-                    <td className="py-3 px-4">{campaign.impressions}</td>
-                    <td className="py-3 px-4">{campaign.clicks}</td>
-                    <td className="py-3 px-4">{campaign.ctr}</td>
+                    <td className="py-3 px-4 font-medium">${Number(campaign.budget ?? 0).toLocaleString()}</td>
+                    <td className="py-3 px-4">{campaign.daily_budget ? `$${Number(campaign.daily_budget).toLocaleString()}` : '—'}</td>
+                    <td className="py-3 px-4">{campaign.start_date?.slice(0,10)}</td>
+                    <td className="py-3 px-4">{campaign.end_date ? campaign.end_date.slice(0,10) : '—'}</td>
                     <td className="py-3 px-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -189,12 +255,12 @@ export function AdvertiserCampaigns() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewCampaign(campaign.id)}>
+                          <DropdownMenuItem onClick={() => openEdit(campaign)}>
                             <Edit className="h-4 w-4 mr-2" />
-                            View/Edit
+                            Edit Budget/Dates
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            {campaign.status === "Active" ? (
+                          <DropdownMenuItem onClick={() => statusMutation.mutate({ id: campaign.id, next: campaign.status === 'active' ? 'paused' : 'active' })}>
+                            {campaign.status === 'active' ? (
                               <>
                                 <Pause className="h-4 w-4 mr-2" />
                                 Pause
@@ -206,11 +272,7 @@ export function AdvertiserCampaigns() {
                               </>
                             )}
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem className="text-red-600" onClick={() => deleteMutation.mutate(campaign.id)}>
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
@@ -224,6 +286,41 @@ export function AdvertiserCampaigns() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Campaign</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="budget">Budget ($)</Label>
+                <Input id="budget" inputMode="decimal" value={form.budget} onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))} />
+              </div>
+              <div>
+                <Label htmlFor="daily_budget">Daily Budget ($)</Label>
+                <Input id="daily_budget" inputMode="decimal" value={form.daily_budget} onChange={(e) => setForm((f) => ({ ...f, daily_budget: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input id="start_date" type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
+              </div>
+              <div>
+                <Label htmlFor="end_date">End Date</Label>
+                <Input id="end_date" type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={() => budgetMutation.mutate()} disabled={budgetMutation.isPending}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

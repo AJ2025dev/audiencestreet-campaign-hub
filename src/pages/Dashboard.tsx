@@ -25,6 +25,9 @@ import {
   BarChart,
   Bar
 } from 'recharts'
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const performanceData = [
   { date: '1/1', impressions: 12500, clicks: 125, spend: 245 },
@@ -70,6 +73,39 @@ const campaignData = [
 ]
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const { data: metrics } = useQuery({
+    queryKey: ["user-metrics", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_metrics_summary")
+        .select("user_id, total_impressions, total_clicks, total_spend_cents, ctr_percent")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data as { total_impressions: number; total_clicks: number; total_spend_cents: number; ctr_percent: number } | null;
+    },
+  });
+  const { data: recentCampaigns } = useQuery({
+    queryKey: ["recent-campaigns", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("id,name,status,start_date,end_date,budget,created_at")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const spend = (metrics?.total_spend_cents ?? 0) / 100;
+  const impressions = metrics?.total_impressions ?? 0;
+  const clicks = metrics?.total_clicks ?? 0;
+  const ctr = metrics?.ctr_percent ?? 0;
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
       <div className="container mx-auto p-6 space-y-6">
@@ -97,8 +133,8 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Spend</p>
-                  <p className="text-xl font-bold text-foreground">$24,680</p>
-                  <p className="text-xs text-success font-medium">+12.5% from last month</p>
+                  <p className="text-xl font-bold text-foreground">${spend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-success font-medium">Updated live</p>
                 </div>
               </div>
             </CardContent>
