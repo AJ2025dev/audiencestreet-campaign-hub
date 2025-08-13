@@ -596,6 +596,39 @@ export type Database = {
       }
     }
     Functions: {
+      auto_pause_overspending_campaigns: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          campaign_id: string
+          campaign_name: string
+          action_taken: string
+        }[]
+      }
+      get_campaign_alerts: {
+        Args: { p_user_id: string }
+        Returns: {
+          campaign_id: string
+          campaign_name: string
+          alert_type: string
+          severity: string
+          message: string
+          spend_amount: number
+          budget_amount: number
+          utilization_percent: number
+        }[]
+      }
+      get_campaign_spend_metrics: {
+        Args: { p_campaign_id: string }
+        Returns: {
+          campaign_id: string
+          total_spend_cents: number
+          spend_today_cents: number
+          average_hourly_spend_cents: number
+          budget_utilization_percent: number
+          daily_budget_utilization_percent: number
+          estimated_completion_hours: number
+        }[]
+      }
       get_user_metrics: {
         Args: Record<PropertyKey, never>
         Returns: {
