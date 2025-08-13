@@ -90,10 +90,8 @@ export default function Admin() {
       return
     }
 
-    // Restrict admin access to specific email only
-    const ADMIN_EMAIL = 'admin@dsp.com' // Change this to your email
-    
-    if (user.email !== ADMIN_EMAIL) {
+    // Check if user has admin role in database
+    if (profile?.role !== 'admin') {
       toast({
         title: "Access Denied",
         description: "Admin access is restricted to authorized personnel only.",
