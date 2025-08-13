@@ -29,6 +29,7 @@ import PMPDeals from "./pages/PMPDeals";
 import MetaAds from "./pages/MetaAds";
 import GoogleAds from "./pages/GoogleAds";
 import MediaPlanning from "./pages/MediaPlanning";
+import BudgetControl from "./pages/BudgetControl";
 import TestDashboard from "./pages/TestDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -177,6 +178,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <MediaPlanning />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/budget-control" element={
+              <ProtectedRoute>
+                <Layout>
+                  <BudgetControl />
                 </Layout>
               </ProtectedRoute>
             } />

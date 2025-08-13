@@ -23,6 +23,7 @@ const navigationItems = [
   { title: "Advertisers", url: "/advertisers", icon: Target },
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
   { title: "Create Campaign", url: "/campaigns/create", icon: PlusCircle },
+  { title: "Budget Control", url: "/budget-control", icon: Shield },
   { title: "Creatives", url: "/creatives", icon: Image },
   { title: "Audiences", url: "/audiences", icon: Users },
   { title: "PMP Deals", url: "/pmp-deals", icon: Handshake },
