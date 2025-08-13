@@ -596,6 +596,16 @@ export type Database = {
       }
     }
     Functions: {
+      get_user_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          total_spend_cents: number
+          ctr_percent: number
+          total_impressions: number
+          total_clicks: number
+        }[]
+      }
       get_user_role: {
         Args: { check_user_id: string }
         Returns: string
