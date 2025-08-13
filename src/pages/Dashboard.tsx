@@ -79,12 +79,10 @@ const Dashboard = () => {
     enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_metrics_summary")
-        .select("user_id, total_impressions, total_clicks, total_spend_cents, ctr_percent")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data as { total_impressions: number; total_clicks: number; total_spend_cents: number; ctr_percent: number } | null;
+        .rpc('get_user_metrics');
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : null;
+      return row as { total_impressions: number; total_clicks: number; total_spend_cents: number; ctr_percent: number } | null;
     },
   });
   const { data: recentCampaigns } = useQuery({

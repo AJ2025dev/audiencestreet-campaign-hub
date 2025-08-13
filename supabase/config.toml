@@ -30,7 +30,7 @@ jwt_expiry = 3600
 [auth.email]
 
 [functions.generate-campaign-strategy]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-creatives]
-verify_jwt = false
+verify_jwt = true
