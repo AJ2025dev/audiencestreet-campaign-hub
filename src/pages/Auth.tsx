@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,10 +31,6 @@ export default function Auth() {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Redirect authenticated users to dashboard
-        if (session?.user) {
-          navigate('/');
-        }
       }
     );
 
@@ -42,13 +39,19 @@ export default function Auth() {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
-        navigate('/');
-      }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Role-based redirect using server profile
+  const { profile } = useAuth();
+  useEffect(() => {
+    if (user && profile?.role) {
+      const path = profile.role === 'admin' ? '/admin' : profile.role === 'agency' ? '/agency' : '/advertiser';
+      navigate(path);
+    }
+  }, [user, profile?.role, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -46,6 +46,20 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
+            <Route path="/agency" element={
+              <ProtectedRoute requireRole="agency">
+                <Layout>
+                  <Advertisers />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/advertiser" element={
+              <ProtectedRoute requireRole="advertiser">
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>
