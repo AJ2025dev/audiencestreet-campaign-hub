@@ -29,7 +29,7 @@ import {
 const RetailMedia = () => {
   const [selectedAudiences, setSelectedAudiences] = useState<string[]>([])
   const [customKeywords, setCustomKeywords] = useState("")
-
+  
   const retailMediaCategories = [
     "Electronics & Technology",
     "Fashion & Apparel", 
@@ -51,6 +51,18 @@ const RetailMedia = () => {
     { name: "Home Depot", logo: "🔨", active: false },
     { name: "Best Buy Advertising", logo: "📱", active: true }
   ]
+
+  const [activeRetailPartners, setActiveRetailPartners] = useState<string[]>(
+    retailPartners.filter(partner => partner.active).map(partner => partner.name)
+  )
+
+  const toggleRetailPartner = (partnerName: string) => {
+    setActiveRetailPartners(prev => 
+      prev.includes(partnerName) 
+        ? prev.filter(name => name !== partnerName)
+        : [...prev, partnerName]
+    )
+  }
 
   const audienceSegments = [
     "High-Value Shoppers",
@@ -105,29 +117,37 @@ const RetailMedia = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {retailPartners.map((partner) => (
-                      <div 
-                        key={partner.name}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                          partner.active 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{partner.logo}</span>
-                            <div>
-                              <h4 className="font-medium text-foreground">{partner.name}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {partner.active ? 'Connected' : 'Available'}
-                              </p>
+                    {retailPartners.map((partner) => {
+                      const isActive = activeRetailPartners.includes(partner.name)
+                      return (
+                        <div 
+                          key={partner.name}
+                          onClick={() => toggleRetailPartner(partner.name)}
+                          className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                            isActive 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{partner.logo}</span>
+                              <div>
+                                <h4 className="font-medium text-foreground">{partner.name}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {isActive ? 'Connected' : 'Available'}
+                                </p>
+                              </div>
                             </div>
+                            <Checkbox 
+                              checked={isActive}
+                              onCheckedChange={() => toggleRetailPartner(partner.name)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
                           </div>
-                          <Checkbox checked={partner.active} />
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
