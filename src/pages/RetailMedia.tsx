@@ -310,42 +310,100 @@ const RetailMedia = () => {
                     Contextual Targeting
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Geographic Location</Label>
-                      <Input placeholder="Enter cities, states, or zip codes" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Device Type</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="All devices" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All devices</SelectItem>
-                          <SelectItem value="mobile">Mobile</SelectItem>
-                          <SelectItem value="desktop">Desktop</SelectItem>
-                          <SelectItem value="tablet">Tablet</SelectItem>
-                        </SelectContent>
-                      </Select>
+                <CardContent className="space-y-6">
+                  {/* Content Categories */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-foreground">Content Categories</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {["News & Politics", "Entertainment", "Sports", "Technology", "Finance", "Health & Wellness", "Travel", "Food & Cooking", "Fashion & Beauty", "Home & Garden", "Education", "Gaming"].map((category) => (
+                        <div key={category} className="flex items-center space-x-2">
+                          <Checkbox id={category} />
+                          <Label htmlFor={category} className="text-sm">{category}</Label>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
+                  {/* Content Keywords */}
                   <div className="space-y-2">
-                    <Label>Time of Day</Label>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="morning" />
-                        <Label htmlFor="morning" className="text-sm">Morning (6AM-12PM)</Label>
+                    <Label htmlFor="content-keywords">Content Keywords</Label>
+                    <Textarea 
+                      id="content-keywords"
+                      placeholder="Enter keywords related to content where ads should appear (e.g., 'luxury cars', 'home renovation', 'healthy recipes')"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Brand Safety */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-foreground">Brand Safety</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Safety Level</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select safety level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="strict">Strict - Family Safe Only</SelectItem>
+                            <SelectItem value="moderate">Moderate - Standard Safe</SelectItem>
+                            <SelectItem value="relaxed">Relaxed - Minimal Restrictions</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="afternoon" />
-                        <Label htmlFor="afternoon" className="text-sm">Afternoon (12PM-6PM)</Label>
+                      <div className="space-y-2">
+                        <Label>Block Categories</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {["Violence", "Adult Content", "Controversial Topics", "Negative News"].map((block) => (
+                            <div key={block} className="flex items-center space-x-1">
+                              <Checkbox id={block} />
+                              <Label htmlFor={block} className="text-xs">{block}</Label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="evening" />
-                        <Label htmlFor="evening" className="text-sm">Evening (6PM-12AM)</Label>
+                    </div>
+                  </div>
+
+                  {/* Environment & Context */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-foreground">Environment & Context</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Geographic Location</Label>
+                        <Input placeholder="Enter cities, states, or zip codes" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Device Type</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="All devices" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All devices</SelectItem>
+                            <SelectItem value="mobile">Mobile</SelectItem>
+                            <SelectItem value="desktop">Desktop</SelectItem>
+                            <SelectItem value="tablet">Tablet</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Time of Day</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="morning" />
+                          <Label htmlFor="morning" className="text-sm">Morning (6AM-12PM)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="afternoon" />
+                          <Label htmlFor="afternoon" className="text-sm">Afternoon (12PM-6PM)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="evening" />
+                          <Label htmlFor="evening" className="text-sm">Evening (6PM-12AM)</Label>
+                        </div>
                       </div>
                     </div>
                   </div>
