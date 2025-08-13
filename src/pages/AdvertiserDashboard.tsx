@@ -1,4 +1,4 @@
-import { MetricCard } from "@/components/MetricCard"
+import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,7 +7,6 @@ import {
   DollarSign, 
   Eye, 
   MousePointer, 
-  Users, 
   TrendingUp,
   PlusCircle,
   Play,
@@ -25,9 +24,9 @@ import {
   BarChart,
   Bar
 } from 'recharts'
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
+import { useNavigate } from "react-router-dom"
 
 const performanceData = [
   { date: '1/1', impressions: 12500, clicks: 125, spend: 245 },
@@ -39,41 +38,10 @@ const performanceData = [
   { date: '1/7', impressions: 21500, clicks: 289, spend: 445 },
 ]
 
-const campaignData = [
-  {
-    id: 1,
-    name: "P&G Gillete",
-    status: "active",
-    impressions: "1.2M",
-    clicks: "24.5K",
-    ctr: "2.04%",
-    spend: "$8,450",
-    cpm: "$7.04"
-  },
-  {
-    id: 2,
-    name: "Apex Girl",
-    status: "paused",
-    impressions: "890K",
-    clicks: "18.2K",
-    ctr: "2.04%",
-    spend: "$6,230",
-    cpm: "$6.99"
-  },
-  {
-    id: 3,
-    name: "Jio Retail",
-    status: "active",
-    impressions: "2.1M",
-    clicks: "45.6K",
-    ctr: "2.17%",
-    spend: "$12,890",
-    cpm: "$6.14"
-  }
-]
+export default function AdvertiserDashboard() {
+  const { user, profile } = useAuth()
+  const navigate = useNavigate()
 
-const Dashboard = () => {
-  const { user } = useAuth();
   const { data: metrics } = useQuery({
     queryKey: ["user-metrics", user?.id],
     enabled: !!user?.id,
@@ -84,9 +52,10 @@ const Dashboard = () => {
       const row = Array.isArray(data) ? data[0] : null;
       return row as { total_impressions: number; total_clicks: number; total_spend_cents: number; ctr_percent: number } | null;
     },
-  });
-  const { data: recentCampaigns } = useQuery({
-    queryKey: ["recent-campaigns", user?.id],
+  })
+
+  const { data: campaigns } = useQuery({
+    queryKey: ["advertiser-campaigns", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -94,16 +63,17 @@ const Dashboard = () => {
         .select("id,name,status,start_date,end_date,budget,created_at")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(10);
       if (error) throw error;
-      return data as any[];
+      return data;
     },
-  });
+  })
 
-  const spend = (metrics?.total_spend_cents ?? 0) / 100;
-  const impressions = metrics?.total_impressions ?? 0;
-  const clicks = metrics?.total_clicks ?? 0;
-  const ctr = metrics?.ctr_percent ?? 0;
+  const spend = (metrics?.total_spend_cents ?? 0) / 100
+  const impressions = metrics?.total_impressions ?? 0
+  const clicks = metrics?.total_clicks ?? 0
+  const ctr = metrics?.ctr_percent ?? 0
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
       <div className="container mx-auto p-6 space-y-6">
@@ -111,11 +81,11 @@ const Dashboard = () => {
         <div className="flex items-center justify-between p-4 bg-card/60 backdrop-blur-sm rounded-xl border border-border/50 shadow-elegant">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Dashboard
+              Advertiser Dashboard
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">Monitor your campaign performance and key metrics</p>
           </div>
-          <Button variant="gradient" className="gap-2 shadow-lg hover:shadow-glow transition-all duration-300">
+          <Button variant="gradient" className="gap-2 shadow-lg hover:shadow-glow transition-all duration-300" onClick={() => navigate("/campaigns/create")}>
             <PlusCircle className="h-4 w-4" />
             Create Campaign
           </Button>
@@ -289,14 +259,14 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Enhanced Campaign Table */}
+        {/* Campaign Table */}
         <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-sm">
           <CardHeader className="border-b border-border/30 bg-gradient-to-r from-success/5 to-success/10">
             <CardTitle className="flex items-center gap-3 text-lg">
               <div className="p-2 bg-success/10 rounded-lg">
-                <Users className="h-5 w-5 text-success" />
+                <BarChart3 className="h-5 w-5 text-success" />
               </div>
-              Active Campaigns
+              Your Campaigns
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -306,17 +276,14 @@ const Dashboard = () => {
                   <tr className="border-b border-border/30 bg-muted/30">
                     <th className="text-left py-4 px-6 font-semibold text-muted-foreground">Campaign</th>
                     <th className="text-left py-4 px-6 font-semibold text-muted-foreground">Status</th>
-                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground">Impressions</th>
-                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground">Clicks</th>
-                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground">CTR</th>
-                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground">Spend</th>
-                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground">CPM</th>
+                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground">Budget</th>
+                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground">Start Date</th>
                     <th className="text-left py-4 px-6 font-semibold text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
-                 <tbody>
-                  {recentCampaigns && recentCampaigns.length > 0 ? (
-                    recentCampaigns.slice(0, 5).map((campaign: any, index: number) => (
+                <tbody>
+                  {campaigns && campaigns.length > 0 ? (
+                    campaigns.map((campaign, index) => (
                       <tr key={campaign.id} className={`border-b border-border/20 hover:bg-primary/5 transition-all duration-200 ${index % 2 === 0 ? 'bg-muted/10' : ''}`}>
                         <td className="py-4 px-6 font-semibold text-foreground">{campaign.name}</td>
                         <td className="py-4 px-6">
@@ -332,11 +299,8 @@ const Dashboard = () => {
                             {campaign.status}
                           </Badge>
                         </td>
-                        <td className="py-4 px-6 font-medium">-</td>
-                        <td className="py-4 px-6 font-medium">-</td>
-                        <td className="py-4 px-6 font-medium text-primary">-</td>
                         <td className="py-4 px-6 font-bold text-foreground">${campaign.budget?.toLocaleString() || 0}</td>
-                        <td className="py-4 px-6 font-medium">-</td>
+                        <td className="py-4 px-6">{new Date(campaign.start_date).toLocaleDateString()}</td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             <Button 
@@ -359,7 +323,7 @@ const Dashboard = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={5} className="py-8 text-center text-muted-foreground">
                         No campaigns found. Create your first campaign to get started.
                       </td>
                     </tr>
@@ -373,5 +337,3 @@ const Dashboard = () => {
     </div>
   )
 }
-
-export default Dashboard

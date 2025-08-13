@@ -131,26 +131,28 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-muted-foreground px-3 py-2">
-            Testing & Development
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink 
-                    to="/test-dashboard" 
-                    className={getNavCls({ isActive: isActive("/test-dashboard") })}
-                  >
-                    <TestTube className="h-4 w-4" />
-                    {!collapsed && <span>Test Dashboard</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {userRole === 'admin' && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-muted-foreground px-3 py-2">
+              Testing & Development
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to="/test-dashboard" 
+                      className={getNavCls({ isActive: isActive("/test-dashboard") })}
+                    >
+                      <TestTube className="h-4 w-4" />
+                      {!collapsed && <span>Test Dashboard</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   )

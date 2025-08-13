@@ -6,7 +6,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import Dashboard from "./pages/Dashboard";
+import AgencyDashboard from "./pages/AgencyDashboard";
+import AdvertiserDashboard from "./pages/AdvertiserDashboard";
 import Advertisers from "./pages/Advertisers";
 import AdvertiserCampaigns from "./pages/AdvertiserCampaigns";
 import Campaigns from "./pages/Campaigns";
@@ -52,21 +55,23 @@ const App = () => (
             <Route path="/agency" element={
               <ProtectedRoute requireRole="agency">
                 <Layout>
-                  <Advertisers />
+                  <AgencyDashboard />
                 </Layout>
               </ProtectedRoute>
             } />
             <Route path="/advertiser" element={
               <ProtectedRoute requireRole="advertiser">
                 <Layout>
-                  <Dashboard />
+                  <AdvertiserDashboard />
                 </Layout>
               </ProtectedRoute>
             } />
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>
-                  <Dashboard />
+                  <RoleBasedRoute>
+                    <Dashboard />
+                  </RoleBasedRoute>
                 </Layout>
               </ProtectedRoute>
             } />
@@ -183,7 +188,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/test-dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute requireRole="admin">
                 <Layout>
                   <TestDashboard />
                 </Layout>
