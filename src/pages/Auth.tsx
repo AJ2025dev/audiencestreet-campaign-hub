@@ -124,7 +124,7 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">DSP Platform</CardTitle>
+          <CardTitle className="text-2xl font-bold">Trading Desk</CardTitle>
           <CardDescription>
             Access your demand-side platform account
           </CardDescription>
