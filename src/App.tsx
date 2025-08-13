@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -15,7 +15,8 @@ import Creatives from "./pages/Creatives";
 import Audiences from "./pages/Audiences";
 import RetailMedia from "./pages/RetailMedia";
 import Reports from "./pages/Reports";
-import Auth from "./pages/Auth";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import Admin from "./pages/Admin";
 import DomainLists from "./pages/DomainLists";
 import AppLists from "./pages/AppLists";
@@ -38,7 +39,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/auth" element={<Auth />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/auth" element={<Navigate to="/login" replace />} />
             <Route path="/admin" element={
               <ProtectedRoute requireRole="admin">
                 <Layout>
