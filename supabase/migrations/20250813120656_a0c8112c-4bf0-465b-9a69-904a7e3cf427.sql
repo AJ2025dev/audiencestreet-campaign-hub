@@ -1,0 +1,1 @@
+UPDATE profiles SET role = 'admin' WHERE user_id = 'e1be4653-c674-4e0d-b999-ef35de2cb1d1';
