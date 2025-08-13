@@ -7,6 +7,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Security limits
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MiB
+const MAX_ENTRIES = 10000;
+const ALLOWED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
+
+function estimateBase64Bytes(b64: string) {
+  const len = b64.length;
+  const padding = (b64.endsWith('==') ? 2 : (b64.endsWith('=') ? 1 : 0));
+  return Math.floor(len * 3 / 4) - padding;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -37,16 +48,38 @@ serve(async (req) => {
     const requestData = await req.json()
     const { file, listType, entryType, campaignId } = requestData
 
-    if (!file) {
-      throw new Error('No file provided')
+    if (!file || typeof file.name !== 'string' || typeof file.data !== 'string') {
+      throw new Error('Invalid file payload')
     }
 
-    console.log(`Processing ${file.name} for user ${user.id}`)
+    // Validate types to prevent abuse
+    const typeSafe = /^[a-z_\-]{3,20}$/
+    if (!typeSafe.test(listType) || !typeSafe.test(entryType)) {
+      throw new Error('Invalid listType or entryType')
+    }
 
-    // Extract base64 data and convert to buffer
-    const base64Data = file.data.split(',')[1] // Remove data:mime/type;base64, prefix
+    const nameLower = file.name.toLowerCase()
+    const dotIdx = nameLower.lastIndexOf('.')
+    const ext = dotIdx >= 0 ? nameLower.slice(dotIdx) : ''
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      throw new Error('Unsupported file type')
+    }
+
+    // Extract base64 data and validate size
+    const commaIdx = file.data.indexOf(',')
+    const base64Data = commaIdx >= 0 ? file.data.slice(commaIdx + 1) : file.data
+    const approxBytes = estimateBase64Bytes(base64Data)
+    if (approxBytes > MAX_FILE_SIZE_BYTES) {
+      throw new Error(`File too large. Max ${MAX_FILE_SIZE_BYTES} bytes`) 
+    }
+
+    console.log(`Processing ${file.name} (${approxBytes} bytes) for user ${user.id}`)
+
+    // Convert to buffer
     const fileBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
-    const fileType = file.name.toLowerCase().endsWith('.csv') ? 'csv' : 'xls'
+
+    // Determine parsing type
+    const fileType = ext === '.csv' ? 'csv' : (ext === '.xlsx' ? 'xlsx' : 'xls')
     
     let entries: string[] = []
 

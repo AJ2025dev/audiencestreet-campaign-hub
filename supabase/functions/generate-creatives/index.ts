@@ -28,6 +28,62 @@ function selectOptimalAPI(requestCount: number, budget: number = 100, quality: '
   return requestCount > 10 ? 'replicate' : 'openai';
 }
 
+// SSRF safeguards and network helpers
+function isPrivateIp(ip: string) {
+  // IPv4 private/reserved ranges
+  return (
+    ip.startsWith('10.') ||
+    ip.startsWith('127.') ||
+    ip.startsWith('0.') ||
+    ip.startsWith('169.254.') ||
+    ip.startsWith('172.16.') || ip.startsWith('172.17.') || ip.startsWith('172.18.') || ip.startsWith('172.19.') ||
+    ip.startsWith('172.20.') || ip.startsWith('172.21.') || ip.startsWith('172.22.') || ip.startsWith('172.23.') ||
+    ip.startsWith('172.24.') || ip.startsWith('172.25.') || ip.startsWith('172.26.') || ip.startsWith('172.27.') ||
+    ip.startsWith('172.28.') || ip.startsWith('172.29.') || ip.startsWith('172.30.') || ip.startsWith('172.31.') ||
+    ip.startsWith('192.168.')
+  );
+}
+
+function isIpAddress(host: string) {
+  // Basic IPv4 check
+  return /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
+}
+
+function parseAndValidateUrl(input: string): URL {
+  const url = new URL(input);
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    throw new Error('Only http/https URLs are allowed');
+  }
+  const host = url.hostname.toLowerCase();
+  if (host === 'localhost' || host.endsWith('.local')) {
+    throw new Error('Local hostnames are not allowed');
+  }
+  if (isIpAddress(host) && isPrivateIp(host)) {
+    throw new Error('Private network addresses are not allowed');
+  }
+  // Limit to default ports
+  if (url.port && url.port !== '80' && url.port !== '443') {
+    throw new Error('Non-standard ports are not allowed');
+  }
+  return url;
+}
+
+async function fetchWithTimeout(resource: Request | string, options: RequestInit & { timeout?: number } = {}) {
+  const { timeout = 5000, ...rest } = options;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    // Do not auto-follow redirects to avoid redirecting to private networks
+    const response = await fetch(resource, { ...rest, signal: controller.signal, redirect: 'manual' });
+    if (response.status >= 300 && response.status < 400) {
+      throw new Error('Redirects are not allowed');
+    }
+    return response;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,8 +91,9 @@ serve(async (req) => {
 
   try {
     const { websiteUrl, creativeBrief, environments, creativeTypes } = await req.json();
+    const sanitizedBrief = typeof creativeBrief === 'string' ? creativeBrief.slice(0, 2000) : '';
     
-    console.log('Received request:', { websiteUrl, creativeBrief, environments, creativeTypes });
+    console.log('Received request:', { websiteUrl, creativeBrief: sanitizedBrief, environments, creativeTypes });
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const replicateApiKey = Deno.env.get('REPLICATE_API_KEY');
@@ -66,16 +123,18 @@ serve(async (req) => {
     if (websiteUrl) {
       try {
         console.log('Analyzing website:', websiteUrl);
+        const safeUrl = parseAndValidateUrl(String(websiteUrl));
         
-        // Add headers to appear like a real browser
-        const websiteResponse = await fetch(websiteUrl, {
+        const websiteResponse = await fetchWithTimeout(safeUrl.toString(), {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Accept-Encoding': 'gzip, deflate',
             'Connection': 'keep-alive',
-          }
+          },
+          method: 'GET',
+          timeout: 5000,
         });
         
         if (!websiteResponse.ok) {
@@ -150,7 +209,7 @@ BRAND ANALYSIS:
 Website URL: ${websiteUrl || 'Not provided'}
 ${brandInfo ? `BRAND DETAILS:\n${brandInfo}\n` : ''}
 ${websiteContent ? `WEBSITE CONTENT ANALYSIS:\n${websiteContent.substring(0, 1000)}\n` : ''}
-Creative Brief: ${creativeBrief || 'Use brand analysis to inform creative direction'}
+Creative Brief: ${sanitizedBrief || 'Use brand analysis to inform creative direction'}
 Target Environments: ${environments?.join(', ') || 'All platforms'}
 Creative Types: ${creativeTypes?.join(', ') || 'All formats'}
 
@@ -345,7 +404,7 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
           {
             time: '8-15s', 
             description: 'Solution Introduction',
-            prompt: `Product/service introduction: ${creativeBrief}. Shows the solution in action, ${brandInfo}. Professional product showcase, modern presentation, high-quality video frame, 16:9 format, marketing video style.`
+            prompt: `Product/service introduction: ${sanitizedBrief}. Shows the solution in action, ${brandInfo}. Professional product showcase, modern presentation, high-quality video frame, 16:9 format, marketing video style.`
           },
           {
             time: '16-23s',
@@ -522,7 +581,7 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
             {
               role: 'user',
               content: `Create rich media and interactive ad concepts for:
-              Brief: ${creativeBrief}
+              Brief: ${sanitizedBrief}
               Brand: ${brandInfo}
               
               Include concepts for:
