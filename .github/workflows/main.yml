@@ -8,3 +8,66 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "Workflow installed"
+name: Agent Discovery (Seven Answers)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/agent-discovery.yml'
+      - 'scripts/agent_discovery.py'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'yarn.lock'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'Dockerfile'
+      - '**/Dockerfile'
+      - 'docker-compose.yml'
+      - 'go.mod'
+      - 'Cargo.toml'
+      - 'Gemfile'
+      - 'pom.xml'
+      - 'composer.json'
+      - 'README*'
+      - 'SECURITY.md'
+      - 'COMPLIANCE.md'
+      - '.github/**'
+      - '**/*.md'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install script deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml tomli
+
+      - name: Run discovery
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python scripts/agent_discovery.py
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-discovery-report
+          path: agent_discovery_report.md
+          if-no-files-found: ignore
