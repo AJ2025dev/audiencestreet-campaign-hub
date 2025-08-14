@@ -151,7 +151,3 @@ jobs:
           path: |
             agenthub/outputs/positioning.md
             agenthub/outputs/kpis.md
-- name: Install Dependencies
-  run: |
-    python -m pip install --upgrade pip
-    pip install "openai>=1.0.0"
