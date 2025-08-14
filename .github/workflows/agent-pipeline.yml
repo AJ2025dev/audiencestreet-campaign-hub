@@ -20,7 +20,7 @@ jobs:
       - name: Run Product Manager Agent
         run: python agenthub/run.py --agent product_manager
       - name: Upload PRD and Backlog
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: product-manager-artifacts
           path: |
@@ -42,7 +42,7 @@ jobs:
       - name: Run Research Agent
         run: python agenthub/run.py --agent research
       - name: Upload Fact Pack
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: research-artifacts
           path: agenthub/outputs/fact_pack.md
@@ -62,7 +62,7 @@ jobs:
       - name: Run Architect Agent
         run: python agenthub/run.py --agent architect
       - name: Upload Architecture Proposal
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: architect-artifacts
           path: agenthub/outputs/architecture.md
@@ -82,7 +82,7 @@ jobs:
       - name: Run Engineer Agent
         run: python agenthub/run.py --agent engineer
       - name: Upload Code Plan
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: engineer-artifacts
           path: agenthub/outputs/code_plan.md
