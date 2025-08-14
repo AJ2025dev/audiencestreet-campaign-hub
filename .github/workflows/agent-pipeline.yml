@@ -1,0 +1,153 @@
+name: Agent Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  product_manager:
+    name: Product Manager
+    runs-on: ubuntu-latest
+    environment: product-manager
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install Dependencies
+        run: pip install openai
+      - name: Run Product Manager Agent
+        run: python agenthub/run.py --agent product_manager
+      - name: Upload PRD and Backlog
+        uses: actions/upload-artifact@v3
+        with:
+          name: product-manager-artifacts
+          path: |
+            agenthub/outputs/prd.md
+            agenthub/outputs/backlog.csv
+
+  research:
+    name: Research
+    runs-on: ubuntu-latest
+    needs: product_manager
+    environment: research
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install Dependencies
+        run: pip install openai
+      - name: Run Research Agent
+        run: python agenthub/run.py --agent research
+      - name: Upload Fact Pack
+        uses: actions/upload-artifact@v3
+        with:
+          name: research-artifacts
+          path: agenthub/outputs/fact_pack.md
+
+  architect:
+    name: Architect
+    runs-on: ubuntu-latest
+    needs: research
+    environment: architect
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install Dependencies
+        run: pip install openai
+      - name: Run Architect Agent
+        run: python agenthub/run.py --agent architect
+      - name: Upload Architecture Proposal
+        uses: actions/upload-artifact@v3
+        with:
+          name: architect-artifacts
+          path: agenthub/outputs/architecture.md
+
+  engineer:
+    name: Engineer
+    runs-on: ubuntu-latest
+    needs: architect
+    environment: engineer
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install Dependencies
+        run: pip install openai
+      - name: Run Engineer Agent
+        run: python agenthub/run.py --agent engineer
+      - name: Upload Code Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: engineer-artifacts
+          path: agenthub/outputs/code_plan.md
+
+  qa:
+    name: QA
+    runs-on: ubuntu-latest
+    needs: engineer
+    environment: qa
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install Dependencies
+        run: pip install openai
+      - name: Run QA Agent
+        run: python agenthub/run.py --agent qa
+      - name: Upload Test Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: qa-artifacts
+          path: agenthub/outputs/test_plan.md
+
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    needs: qa
+    environment: docs
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install Dependencies
+        run: pip install openai
+      - name: Run Docs Agent
+        run: python agenthub/run.py --agent docs
+      - name: Upload Documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-artifacts
+          path: |
+            agenthub/outputs/readme.md
+            agenthub/outputs/api_docs.md
+            agenthub/outputs/release_notes.md
+
+  growth:
+    name: Growth
+    runs-on: ubuntu-latest
+    needs: docs
+    environment: growth
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install Dependencies
+        run: pip install openai
+      - name: Run Growth Agent
+        run: python agenthub/run.py --agent growth
+      - name: Upload Growth Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: growth-artifacts
+          path: |
+            agenthub/outputs/positioning.md
+            agenthub/outputs/kpis.md
