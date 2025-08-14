@@ -1,0 +1,376 @@
+name: Agent Discovery (Seven Answers)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install script deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml tomli
+
+      - name: Create discovery script
+        run: |
+          mkdir -p scripts
+          cat > scripts/agent_discovery.py << 'PY'
+#!/usr/bin/env python3
+# Agent Discovery Script: infers answers to seven setup questions from this repo.
+
+import os, re, json, sys, traceback
+from pathlib import Path
+from typing import Dict, List, Tuple, Any
+
+import requests, yaml
+try:
+    import tomllib  # Python 3.11+
+except Exception:
+    import tomli as tomllib  # type: ignore
+
+GITHUB_API = os.environ.get("GITHUB_API_URL", "https://api.github.com")
+REPO_FULL = os.environ.get("GITHUB_REPOSITORY")
+TOKEN = os.environ.get("GITHUB_TOKEN")
+
+SESSION = requests.Session()
+SESSION.headers.update({
+    "Authorization": f"Bearer {TOKEN}" if TOKEN else "",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "agent-discovery-script"
+})
+
+IGNORE_DIRS = {".git",".svn",".hg",".venv","venv","env",".env","node_modules","dist","build",".next",".turbo",".cache","coverage","target","vendor","__pycache__","Pods","ios/Pods","android/app/build",".idea",".vscode"}
+
+def debug(msg: str): print(f"[agent-discovery] {msg}")
+
+def github_get(path: str) -> Tuple[int, Any]:
+    url = f"{GITHUB_API}{path}"
+    r = SESSION.get(url, timeout=20)
+    try: return r.status_code, r.json()
+    except Exception: return r.status_code, {"raw": r.text}
+
+def get_repo_info() -> Dict[str, Any]:
+    if not REPO_FULL: return {}
+    code, data = github_get(f"/repos/{REPO_FULL}")
+    if code != 200: return {}
+    code2, topics = github_get(f"/repos/{REPO_FULL}/topics")
+    if code2 == 200 and isinstance(topics, dict):
+        data["topics"] = topics.get("names", [])
+    return data
+
+def find_files(patterns: List[str]) -> List[Path]:
+    out: List[Path] = []
+    for p in patterns:
+        for m in Path(".").glob(p):
+            if any(part in IGNORE_DIRS for part in m.parts): continue
+            if m.is_file(): out.append(m)
+    return out
+
+def safe_read_text(path: Path, limit: int = 200_000) -> str:
+    try:
+        if path.stat().st_size > limit: return ""
+        return path.read_text(encoding="utf-8", errors="ignore")
+    except Exception: return ""
+
+def scan_repo_for_signals() -> Dict[str, Any]:
+    signals: Dict[str, Any] = {"package_json":{}, "requirements":[], "pyproject":{}, "dockerfiles":[], "compose":[], "k8s":[], "serverless":[], "vercel":[], "netlify":[], "procfile":[], "fly_toml":[], "render_yaml":[], "codeowners":[], "pr_templates":[], "workflows":[], "security_docs":[], "compliance_docs":[], "readmes":[], "topics":[], "default_branch": None}
+    repo_info = get_repo_info()
+    signals["topics"] = repo_info.get("topics", [])
+    signals["default_branch"] = repo_info.get("default_branch")
+
+    # JS
+    pj = find_files(["package.json"])
+    if pj:
+        import json as _json
+        try:
+            content = _json.loads(safe_read_text(pj[0]) or "{}")
+            signals["package_json"] = {
+                "dependencies": content.get("dependencies", {}),
+                "devDependencies": content.get("devDependencies", {}),
+                "scripts": content.get("scripts", {}),
+                "engines": content.get("engines", {}),
+                "type": content.get("type")
+            }
+        except Exception: pass
+
+    # Python
+    req = find_files(["requirements.txt"])
+    if req:
+        reqs = []
+        for line in safe_read_text(req[0]).splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"): continue
+            pkg = re.split(r"[<=>@ ]+", line)[0].strip()
+            if pkg: reqs.append(pkg.lower())
+        signals["requirements"] = sorted(set(reqs))
+
+    pp = find_files(["pyproject.toml"])
+    if pp:
+        try:
+            data = tomllib.loads(safe_read_text(pp[0]) or "")
+            deps = []
+            prod = data.get("project", {}).get("dependencies", [])
+            deps.extend([re.split(r"[<=>@ ]+", d)[0].lower() for d in prod])
+            tool = data.get("tool", {})
+            poetry_deps = tool.get("poetry", {}).get("dependencies", {})
+            for k in poetry_deps.keys():
+                if k.lower() != "python": deps.append(k.lower())
+            signals["pyproject"] = {"dependencies": sorted(set(deps))}
+        except Exception: pass
+
+    # Other ecosystems
+    def _read_one(globs): 
+        fs = find_files(globs); 
+        return safe_read_text(fs[0]) if fs else ""
+    signals["go_mod"] = _read_one(["go.mod"])
+    signals["cargo_toml"] = _read_one(["Cargo.toml"])
+    signals["pom_xml"] = _read_one(["pom.xml"])
+    signals["gemfile"] = _read_one(["Gemfile"])
+    try:
+        import json as _json
+        cj = find_files(["composer.json"])
+        if cj: signals["composer_json"] = _json.loads(safe_read_text(cj[0]) or "{}")
+    except Exception: pass
+
+    # Infra/runtime
+    signals["dockerfiles"] = [str(p) for p in find_files(["Dockerfile", "**/Dockerfile"])]
+    signals["compose"] = [str(p) for p in find_files(["docker-compose.y*ml"])]
+    signals["k8s"] = [str(p) for p in find_files(["k8s/**/*.y*ml","helm/**/values*.y*ml","**/deployment.y*ml"])]
+    signals["serverless"] = [str(p) for p in find_files(["serverless.y*ml"])]
+    signals["vercel"] = [str(p) for p in find_files(["vercel.json"])]
+    signals["netlify"] = [str(p) for p in find_files(["netlify.toml"])]
+    signals["procfile"] = [str(p) for p in find_files(["Procfile"])]
+    signals["fly_toml"] = [str(p) for p in find_files(["fly.toml"])]
+    signals["render_yaml"] = [str(p) for p in find_files(["render.y*ml"])]
+
+    # Governance / gates
+    signals["codeowners"] = [str(p) for p in find_files(["CODEOWNERS",".github/CODEOWNERS","docs/CODEOWNERS"])]
+    signals["pr_templates"] = [str(p) for p in find_files(["PULL_REQUEST_TEMPLATE.md",".github/pull_request_template.md",".github/PULL_REQUEST_TEMPLATE/*.md"])]
+    wf_paths = find_files([".github/workflows/*.y*ml"])
+    signals["workflows"] = [str(p) for p in wf_paths]
+    wf_summaries = []
+    for wf in wf_paths:
+        try:
+            data = yaml.safe_load(safe_read_text(wf)) or {}
+            name = data.get("name")
+            on = list(data.get("on", {}).keys()) if isinstance(data.get("on"), dict) else data.get("on")
+            jobs = list((data.get("jobs") or {}).keys())
+            wf_summaries.append({"path": str(wf), "name": name, "on": on, "jobs": jobs})
+        except Exception:
+            wf_summaries.append({"path": str(wf), "name": None, "on": None, "jobs": []})
+    signals["workflow_summaries"] = wf_summaries
+    return signals
+
+def detect_stack(signals: Dict[str, Any]) -> Dict[str, Any]:
+    js = {**signals.get("package_json", {}).get("dependencies", {}), **signals.get("package_json", {}).get("devDependencies", {})}
+    py = set(signals.get("requirements", [])) | set(signals.get("pyproject", {}).get("dependencies", []))
+    frameworks, langs, evidence = [], set(), []
+    if js:
+        langs.add("JavaScript/TypeScript")
+        for fw in ["next","react","vue","nuxt","svelte","angular","astro","remix"]:
+            if fw in js: frameworks.append(fw); evidence.append(f"package.json: {fw}")
+        for srv in ["express","fastify","koa","hapi","nestjs","@nestjs/core"]:
+            if srv in js: frameworks.append(srv); evidence.append(f"package.json: {srv}")
+    if py:
+        langs.add("Python")
+        for fw in ["fastapi","flask","django","litestar","sanic","tornado","aiohttp"]:
+            if fw in py: frameworks.append(fw); evidence.append(f"python deps: {fw}")
+    if signals.get("go_mod"): langs.add("Go"); evidence.append("go.mod present")
+    if signals.get("cargo_toml"): langs.add("Rust"); evidence.append("Cargo.toml present")
+    if signals.get("pom_xml"): langs.add("Java"); evidence.append("pom.xml present")
+    if signals.get("gemfile"): langs.add("Ruby"); evidence.append("Gemfile present")
+    if signals.get("composer_json"): langs.add("PHP"); evidence.append("composer.json present")
+    app_types = []
+    if any(x in js for x in ["next","react","vue","svelte"]): app_types.append("Web app")
+    if any(x in js for x in ["express","fastify","koa"]) or any(x in py for x in ["fastapi","flask","django"]): app_types.append("API / service")
+    mobile_dirs = ["android","ios","app/src","ios/Runner.xcodeproj","android/app/build.gradle"]
+    if any((Path(d).exists() for d in mobile_dirs)): app_types.append("Mobile app")
+    confidence = 0.6 if (frameworks or app_types or langs) else 0.2
+    return {"languages": sorted(langs) or ["Unknown"], "frameworks": sorted(set(frameworks)) or ["Unknown"], "app_types": sorted(set(app_types)) or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+def detect_tools(signals: Dict[str, Any]) -> Dict[str, Any]:
+    js = {**signals.get("package_json", {}).get("dependencies", {}), **signals.get("package_json", {}).get("devDependencies", {})}
+    py = set(signals.get("requirements", [])) | set(signals.get("pyproject", {}).get("dependencies", []))
+    tools, evidence = [], []
+    def has_any(h, ks): return any(k in h for k in ks)
+    if has_any(js, ["@linear/sdk","linear-web"]) or "jira" in py or has_any(js, ["jira-client","@atlassian"]):
+        tools.append("Linear/Jira"); evidence.append("Linear/Jira deps present")
+    if has_any(js, ["@slack/web-api","@slack/bolt"]) or "slack_sdk" in py:
+        tools.append("Slack"); evidence.append("Slack dependency present")
+    if has_any(js, ["notion-client"]) or "notion-client" in py:
+        tools.append("Notion"); evidence.append("Notion dependency present")
+    if has_any(js, ["@octokit/rest"]) or "PyGithub" in py:
+        tools.append("GitHub API"); evidence.append("GitHub API client present")
+    if has_any(js, ["openai","anthropic","cohere","@google/generative-ai"]) or any(x in py for x in ["openai","anthropic","cohere","google-generativeai"]):
+        tools.append("Cloud LLMs"); evidence.append("OpenAI/Anthropic/Cohere/Google deps present")
+    if has_any(js, ["llamaindex","langchain"]) or any(x in py for x in ["llama-index","langchain"]):
+        tools.append("RAG tools"); evidence.append("LangChain/LlamaIndex present")
+    if has_any(js, ["@aws-sdk"]) or "boto3" in py:
+        tools.append("AWS"); evidence.append("AWS SDK present")
+    if any(k.startswith("google-cloud-") for k in py) or has_any(js, ["@google-cloud"]):
+        tools.append("Google Cloud"); evidence.append("GCP SDK present")
+    if has_any(js, ["@azure/"]) or any(x in py for x in ["azure","azure-core","azure-ai-textanalytics"]):
+        tools.append("Azure"); evidence.append("Azure SDK present")
+    confidence = 0.5 if tools else 0.2
+    return {"tools": sorted(set(tools)) or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+def detect_model_prefs(signals: Dict[str, Any]) -> Dict[str, Any]:
+    js = {**signals.get("package_json", {}).get("dependencies", {}), **signals.get("package_json", {}).get("devDependencies", {})}
+    py = set(signals.get("requirements", [])) | set(signals.get("pyproject", {}).get("dependencies", []))
+    providers, mode, evidence = [], [], []
+    for name in ["openai","anthropic","cohere","@google/generative-ai","mistral"]:
+        if name in js or name in py: providers.append(name.replace("@google/generative-ai","google")); evidence.append(f"Found dependency: {name}")
+    for name in ["transformers","accelerate","vllm","ollama","ggml","ctransformers"]:
+        if name in js or name in py: mode.append("local"); evidence.append(f"Local inference signal: {name}")
+    if providers and not mode: mode.append("cloud")
+    if not providers and not mode: mode.append("Unknown")
+    confidence = 0.5 if providers or mode != ["Unknown"] else 0.2
+    return {"providers": sorted(set(providers)) or ["Unknown"], "mode": sorted(set(mode)), "confidence": confidence, "evidence": evidence}
+
+def detect_runtime(signals: Dict[str, Any]) -> Dict[str, Any]:
+    where, evidence = [], []
+    if signals["dockerfiles"] or signals["compose"]: where.append("Containers"); evidence.append("Dockerfile/docker-compose detected")
+    if signals["k8s"]: where.append("Kubernetes"); evidence.append("k8s manifests/Helm detected")
+    if signals["serverless"]: where.append("Serverless"); evidence.append("serverless.yml detected")
+    if signals["vercel"]: where.append("Vercel"); evidence.append("vercel.json detected")
+    if signals["netlify"]: where.append("Netlify"); evidence.append("netlify.toml detected")
+    if signals["procfile"]: where.append("Heroku"); evidence.append("Procfile detected")
+    if signals["fly_toml"]: where.append("Fly.io"); evidence.append("fly.toml detected")
+    if signals["render_yaml"]: where.append("Render"); evidence.append("render.yml detected")
+    confidence = 0.6 if where else 0.2
+    return {"run_targets": sorted(set(where)) or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+def get_branch_protection(branch: str) -> Dict[str, Any]:
+    if not REPO_FULL: return {}
+    code, data = github_get(f"/repos/{REPO_FULL}/branches/{branch}/protection")
+    if code != 200: return {"_note": f"Unable to fetch branch protection (status {code})."}
+    return data
+
+def detect_gates(signals: Dict[str, Any]) -> Dict[str, Any]:
+    gates, evidence = [], []
+    if signals["codeowners"]:
+        gates.append("CODEOWNERS enforced reviews (likely)")
+        evidence.extend([f"Found {p}" for p in signals["codeowners"]])
+    if signals["pr_templates"]:
+        gates.append("PR template present (policy hints)")
+        evidence.extend([f"Found {p}" for p in signals["pr_templates"]])
+    default_branch = signals.get("default_branch") or "main"
+    protection = get_branch_protection(default_branch)
+    if protection and isinstance(protection, dict) and "required_status_checks" in protection:
+        gates.append("Protected default branch with required status checks")
+        evidence.append("Branch protection fetched from API")
+    elif isinstance(protection, dict) and "_note" in protection:
+        evidence.append(protection["_note"])
+    confidence = 0.5 if gates else 0.2
+    return {"gates": gates or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+def detect_compliance(signals: Dict[str, Any]) -> Dict[str, Any]:
+    hints, evidence = [], []
+    for p in signals["security_docs"] + signals["compliance_docs"]:
+        text = safe_read_text(Path(p)).lower()
+        if any(k in text for k in ["gdpr","hipaa","soc 2","soc2","iso 27001","pci"]):
+            hints.append("Regulatory terms present (GDPR/HIPAA/SOC2/ISO27001/PCI)")
+            evidence.append(f"{p}")
+    if signals["security_docs"]:
+        hints.append("SECURITY.md present"); evidence.extend(signals["security_docs"])
+    for p in signals["readmes"]:
+        text = safe_read_text(Path(p)).lower()
+        if any(k in text for k in ["pii","phi","privacy"]):
+            hints.append("Mentions PII/PHI/Privacy in README"); evidence.append(p)
+    confidence = 0.4 if hints else 0.2
+    return {"posture": sorted(set(hints)) or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+def render_report(answers: Dict[str, Any]) -> str:
+    lines = []
+    lines.append("# Agent Bootstrap: Seven Answers")
+    lines.append("Generated by a read-only GitHub Action in this repository.")
+    lines.append("")
+    for i in range(1, 8):
+        key = f"q{i}"; block = answers.get(key, {})
+        lines.append(f"## {i}) {block.get('title', '')}")
+        lines.append(f"**Answer:** {block.get('answer', 'Unknown')}")
+        lines.append(f"**Confidence:** {block.get('confidence', 0):.2f}")
+        if block.get("details"): lines.append(f"**Details:**\n{block['details']}")
+        if block.get("evidence"):
+            lines.append("<details><summary>Evidence</summary>\n")
+            for e in block["evidence"]: lines.append(f"- {e}")
+            lines.append("\n</details>")
+        if block.get("open_questions"):
+            lines.append("**Open questions for you:**")
+            for q in block["open_questions"]: lines.append(f"- {q}")
+        lines.append("")
+    lines.append("---"); lines.append("_Generated by `scripts/agent_discovery.py`._")
+    return "\n".join(lines)
+
+def open_or_update_issue(title: str, body: str) -> None:
+    if not REPO_FULL or not TOKEN: 
+        debug("Missing REPO or TOKEN; skipping issue creation."); return
+    code, issues = github_get(f"/repos/{REPO_FULL}/issues?state=open&per_page=100")
+    issue_id = None
+    if code == 200 and isinstance(issues, list):
+        for it in issues:
+            if it.get("title") == title: issue_id = it.get("number"); break
+    if issue_id:
+        r = SESSION.patch(f"{GITHUB_API}/repos/{REPO_FULL}/issues/{issue_id}", json={"body": body}, timeout=20)
+        debug(f"Updated issue #{issue_id}: HTTP {r.status_code}")
+    else:
+        r = SESSION.post(f"{GITHUB_API}/repos/{REPO_FULL}/issues", json={"title": title, "body": body}, timeout=20)
+        debug(f"Created issue: HTTP {r.status_code}")
+
+def main():
+    try:
+        signals = scan_repo_for_signals()
+        stack = detect_stack(signals)
+        tools = detect_tools(signals)
+        model = detect_model_prefs(signals)
+        runtime = detect_runtime(signals)
+        gates = detect_gates(signals)
+        compliance = detect_compliance(signals)
+        answers = {
+            "q1": {"title":"What are you building (SaaS, data platform, mobile app, API, internal tooling)?","answer":", ".join(stack.get("app_types", ["Unknown"])),"confidence":stack["confidence"],"details":f"Languages: {', '.join(stack.get('languages', []))}; Frameworks: {', '.join(stack.get('frameworks', []))}","evidence":stack.get("evidence", []),"open_questions":["Confirm the primary product type and key user segments."]},
+            "q2": {"title":"Preferred stack (Python or JS/TS)? Any frameworks to use/avoid?","answer":f"Stack signals: Languages={', '.join(stack.get('languages', []))}; Frameworks={', '.join(stack.get('frameworks', []))}","confidence":stack["confidence"],"details":"Derived from dependency manifests.","evidence":stack.get("evidence", []),"open_questions":["List frameworks to avoid (if any)."]},
+            "q3": {"title":"Tools to integrate (GitHub, Jira/Linear, Slack, Notion, CI/CD)?","answer":", ".join(tools.get("tools", ["Unknown"])),"confidence":tools["confidence"],"details":"Based on detected client libraries and workflow files.","evidence":tools.get("evidence", []) + [f"Workflows: {len(signals.get('workflows', []))} found"],"open_questions":["Confirm your ticketing/PM system and comms channels."]},
+            "q4": {"title":"Model/provider preferences (local vs cloud; cost/latency constraints)?","answer":f"Providers: {', '.join(model.get('providers', []))}; Mode: {', '.join(model.get('mode', []))}","confidence":model["confidence"],"details":"Inferred from AI/RAG library usage.","evidence":model.get("evidence", []),"open_questions":["State monthly budget ceilings and latency targets (p50/p95)."]},
+            "q5": {"title":"Data/privacy constraints (PII, compliance, on‑prem, network limits)?","answer":"; ".join(compliance.get("posture", ["Unknown"])),"confidence":compliance["confidence"],"details":"Looked for SECURITY/COMPLIANCE docs and privacy mentions.","evidence":compliance.get("evidence", []),"open_questions":["Confirm if any PII/PHI is processed and required compliance frameworks."]},
+            "q6": {"title":"Where should agents run (local dev, container, serverless, VM)?","answer":", ".join(runtime.get("run_targets", ["Unknown"])),"confidence":runtime["confidence"],"details":"Derived from infra config files.","evidence":runtime.get("evidence", []),"open_questions":["Name your target environment(s) and deployment cadence."]},
+            "q7": {"title":"What approval gates should humans control?","answer":"; ".join(gates.get("gates", ["Unknown"])),"confidence":gates["confidence"],"details":"CODEOWNERS/PR templates/branch protection signals.","evidence":gates.get("evidence", []),"open_questions":["Confirm who approves PRs, releases, and production changes."]}
+        }
+        report = render_report(answers)
+        Path("agent_discovery_report.md").write_text(report, encoding="utf-8")
+        open_or_update_issue("Agent Bootstrap: Seven Answers", report)
+        print(report[:800])
+    except Exception:
+        Path("agent_discovery_report.md").write_text(f"# Agent Discovery Failed\n\n```\n{traceback.format_exc()}\n```", encoding="utf-8")
+        raise
+
+if __name__ == "__main__": main()
+PY
+
+      - name: Run discovery
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python scripts/agent_discovery.py
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-discovery-report
+          path: agent_discovery_report.md
+          if-no-files-found: ignore
