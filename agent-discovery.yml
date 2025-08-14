@@ -1,0 +1,165 @@
+name: Agent Discovery (Seven Answers)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write    # needed to open/update the Issue
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install script deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml tomli
+
+      - name: Run discovery (inline)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python - << 'PY'
+          import os, re, json, traceback
+          from pathlib import Path
+          import requests, yaml
+          try:
+              import tomllib
+          except Exception:
+              import tomli as tomllib
+
+          API = os.environ.get("GITHUB_API_URL", "https://api.github.com")
+          REPO = os.environ.get("GITHUB_REPOSITORY")
+          TOKEN = os.environ.get("GITHUB_TOKEN")
+
+          S = requests.Session()
+          if TOKEN:
+              S.headers["Authorization"] = f"Bearer {TOKEN}"
+          S.headers.update({
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "agent-discovery-script"
+          })
+
+          def gget(path):
+              r = S.get(f"{API}{path}", timeout=20)
+              try: return r.status_code, r.json()
+              except Exception: return r.status_code, {"raw": r.text}
+
+          def write_report(text):
+              Path("agent_discovery_report.md").write_text(text, encoding="utf-8")
+
+          def open_issue(title, body):
+              if not (REPO and TOKEN):
+                  return False, "Missing repo or token"
+              r = S.post(f"{API}/repos/{REPO}/issues", json={"title": title, "body": body}, timeout=20)
+              if r.status_code >= 300:
+                  return False, f"{r.status_code}: {r.text[:400]}"
+              return True, r.json().get("html_url")
+
+          try:
+              # ---- quick signals (safe, won’t fail run if blocked) ----
+              code, repo = gget(f"/repos/{REPO}")
+              default_branch = (repo or {}).get("default_branch", "main")
+
+              # scan manifests minimally
+              import glob, pathlib
+              def read(p, limit=200_000):
+                  try:
+                      if pathlib.Path(p).stat().st_size > limit: return ""
+                      return pathlib.Path(p).read_text(encoding="utf-8", errors="ignore")
+                  except Exception:
+                      return ""
+
+              langs, frameworks, tools, runtime = set(), set(), set(), set()
+              deps = {}
+
+              if Path("package.json").exists():
+                  try:
+                      deps = json.loads(read("package.json") or "{}")
+                      all_deps = {**deps.get("dependencies", {}), **deps.get("devDependencies", {})}
+                      if all_deps:
+                          langs.add("JavaScript/TypeScript")
+                          if "react" in all_deps: frameworks.add("React")
+                          if "next" in all_deps: frameworks.add("Next.js")
+                          if "express" in all_deps: frameworks.add("Express")
+                          if "@supabase/supabase-js" in all_deps: tools.add("Supabase")
+                          if "openai" in all_deps or "anthropic" in all_deps: tools.add("Cloud LLMs")
+                  except Exception:
+                      pass
+
+              for reqfile in ["requirements.txt", "pyproject.toml"]:
+                  if Path(reqfile).exists():
+                      content = read(reqfile).lower()
+                      if content:
+                          langs.add("Python")
+                          if "fastapi" in content: frameworks.add("FastAPI")
+                          if "flask" in content: frameworks.add("Flask")
+                          if "boto3" in content: tools.add("AWS")
+                          if "google-cloud" in content: tools.add("GCP")
+
+              # infra hints
+              if Path("Dockerfile").exists() or list(Path(".").glob("**/Dockerfile")):
+                  runtime.add("Containers")
+              if list(Path(".github/workflows").glob("*.y*ml")):
+                  tools.add("GitHub Actions")
+
+              # Build report
+              lines = []
+              lines.append("# Agent Bootstrap: Seven Answers\n")
+              lines.append("## 1) What are you building?\n")
+              app_types = []
+              if "React" in frameworks: app_types.append("Web app (React)")
+              if not app_types: app_types = ["Unknown"]
+              lines.append(f"**Answer:** {', '.join(app_types)}\n")
+
+              lines.append("## 2) Preferred stack\n")
+              lines.append(f"**Answer:** Languages = {', '.join(sorted(langs)) or 'Unknown'}; Frameworks = {', '.join(sorted(frameworks)) or 'Unknown'}\n")
+
+              lines.append("## 3) Tools to integrate\n")
+              lines.append(f"**Answer:** {', '.join(sorted(tools)) or 'Unknown'}\n")
+
+              lines.append("## 4) Model/provider prefs\n")
+              lines.append("**Answer:** Inferred from deps (e.g., OpenAI/Anthropic if present). Confirm budget & latency.\n")
+
+              lines.append("## 5) Data/privacy constraints\n")
+              lines.append("**Answer:** Look for SECURITY/COMPLIANCE docs; confirm if PII/PHI handled.\n")
+
+              lines.append("## 6) Where agents run\n")
+              lines.append(f"**Answer:** {', '.join(sorted(runtime)) or 'Unknown'}\n")
+
+              lines.append("## 7) Approval gates\n")
+              lines.append("**Answer:** Use Code Owners/branch protections; confirm human-in-the-loop gates.\n")
+
+              report = "\n".join(lines)
+              write_report(report)
+
+              # Try to create the Issue, but NEVER fail the job if blocked
+              ok, info = open_issue("Agent Bootstrap: Seven Answers", report)
+              if ok:
+                  print(f"Issue created: {info}")
+              else:
+                  print(f"Note: could not create Issue automatically ({info}). Report artifact still uploaded.")
+
+          except Exception as e:
+              err = "# Agent Discovery Failed\n\n```\n" + traceback.format_exc() + "\n```"
+              write_report(err)
+              # Do not raise — we still want the artifact
+          PY
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-discovery-report
+          path: agent_discovery_report.md
+          if-no-files-found: error
