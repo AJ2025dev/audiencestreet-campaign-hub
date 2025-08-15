@@ -13,17 +13,20 @@ jobs:
   deploy:
     name: Deploy Backend (Render) & Frontend (Vercel)
     runs-on: ubuntu-latest
+    env:
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
     steps:
       - name: Trigger Render backend deploy
-        if: ${{ secrets.RENDER_DEPLOY_HOOK != '' }}
+        if: ${{ env.RENDER_DEPLOY_HOOK != '' }}
         run: |
-          curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK"
           echo "Render deploy hook triggered."
 
       - name: Trigger Vercel frontend deploy
-        if: ${{ secrets.VERCEL_DEPLOY_HOOK != '' }}
+        if: ${{ env.VERCEL_DEPLOY_HOOK != '' }}
         run: |
-          curl -fsSL -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+          curl -fsSL -X POST "$VERCEL_DEPLOY_HOOK"
           echo "Vercel deploy hook triggered."
 
   wait_for_backend:
@@ -53,7 +56,6 @@ jobs:
     needs: [wait_for_backend]
     runs-on: ubuntu-latest
     env:
-      # pass secrets to downstream jobs/agents
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       EQUATIV_API_KEY: ${{ secrets.EQUATIV_API_KEY }}
       MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
@@ -61,17 +63,12 @@ jobs:
       DEFAULT_AGENCY_MARGIN_PCT: ${{ secrets.DEFAULT_AGENCY_MARGIN_PCT }}
       DEFAULT_ADMIN_BUFFER_PCT: ${{ secrets.DEFAULT_ADMIN_BUFFER_PCT }}
       API_BASE_URL: ${{ vars.API_BASE_URL }}
+      GH_TOKEN: ${{ github.token }}   # token for gh CLI
     steps:
-      - name: Install GitHub CLI
-        uses: cli/cli@v3
-        with:
-          version: latest
-
+      # GitHub-hosted runners already include gh; no install needed
       - name: Trigger existing Agent Pipeline workflow
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # If your agent workflow has a different name, change it below:
+          # Change this if your workflow has a different display name
           wf_name="Agent Pipeline"
           echo "Triggering \"$wf_name\" on main ..."
           gh workflow run "$wf_name" --ref main
@@ -79,12 +76,12 @@ jobs:
           sleep 10
           gh run watch --exit-status
 
-      # Optional: quick smoke checks if you want CI to validate endpoints too
       - name: Smoke test Pricing API
         run: |
-          curl -fsSL "${API_BASE_URL}/api/campaigns/price?base=1000&agency_pct=15&admin_pct=5" | jq .
+          curl -fsSL "${API_BASE_URL}/api/campaigns/price?base=1000&agency_pct=15&admin_pct=5" || exit 1
+
       - name: Smoke test Creative (text)
         run: |
           curl -fsSL -X POST "${API_BASE_URL}/api/creatives/text" \
             -H "Content-Type: application/json" \
-            -d '{"product":"Sneaker X","audience":"runners in Mumbai"}' | jq .
+            -d '{"product":"Sneaker X","audience":"runners in Mumbai"}' || exit 1
