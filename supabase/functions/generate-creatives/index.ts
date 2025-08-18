@@ -311,6 +311,25 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
           let imageBase64 = null;
           let apiUsed = 'unknown';
           
+          // Calculate optimal size and aspect ratio for each banner
+          const aspectRatio = size.width / size.height;
+          let dalleSize = '1024x1024'; // default
+          let replicateAspectRatio = '1:1'; // default
+          
+          // Map banner dimensions to closest DALL-E supported sizes
+          if (aspectRatio > 1.5) { // Wide banners like leaderboard
+            dalleSize = '1792x1024';
+            replicateAspectRatio = '16:9';
+          } else if (aspectRatio < 0.7) { // Tall banners like skyscraper
+            dalleSize = '1024x1792';
+            replicateAspectRatio = '9:16';
+          } else { // Square-ish banners like medium rectangle
+            dalleSize = '1024x1024';
+            replicateAspectRatio = '1:1';
+          }
+          
+          console.log(`Banner ${size.name} (${size.width}x${size.height}, ratio: ${aspectRatio.toFixed(2)}) -> DALL-E: ${dalleSize}, Replicate: ${replicateAspectRatio}`);
+
           // Use selected API for image generation
           if (selectedAPI === 'openai') {
             const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
@@ -323,7 +342,7 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
                 model: 'dall-e-3',
                 prompt: detailedPrompt,
                 n: 1,
-                size: '1024x1024',
+                size: dalleSize,
                 response_format: 'b64_json',
                 quality: 'hd'
               }),
@@ -343,7 +362,7 @@ CRITICAL: Do NOT use generic business language. Use specific details from the br
                 go_fast: true,
                 megapixels: "1",
                 num_outputs: 1,
-                aspect_ratio: "1:1",
+                aspect_ratio: replicateAspectRatio,
                 output_format: "webp",
                 output_quality: 80,
                 num_inference_steps: 4
