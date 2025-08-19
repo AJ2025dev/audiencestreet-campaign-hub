@@ -38,17 +38,17 @@ jobs:
     steps:
       - name: Poll health endpoint
         run: |
-          echo "Waiting for backend at $API_BASE_URL ..."
-          for i in {1..40}; do
-            code=$(curl -sk -o /dev/null -w "%{http_code}" "$API_BASE_URL/api/integrations/meta/status")
-            if [ "$code" = "200" ]; then
-              echo "Backend healthy."
+          echo "Checking Supabase backend at $API_BASE_URL ..."
+          for i in {1..10}; do
+            code=$(curl -sk -o /dev/null -w "%{http_code}" "$API_BASE_URL/rest/v1/")
+            if [ "$code" = "200" ] || [ "$code" = "401" ]; then
+              echo "Supabase backend is healthy."
               exit 0
             fi
-            echo "Not ready yet ($i/40). Sleeping 15s..."
-            sleep 15
+            echo "Not ready yet ($i/10). Sleeping 5s..."
+            sleep 5
           done
-          echo "Backend did not become healthy in time."
+          echo "Backend did not respond in time."
           exit 1
 
   qa_agents:
