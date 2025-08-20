@@ -38,14 +38,18 @@ jobs:
     steps:
       - name: Poll health endpoint
         run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "API_BASE_URL is not set. Please add it as a repository variable."
+            exit 1
+          fi
           echo "Checking Supabase backend at $API_BASE_URL ..."
           for i in {1..10}; do
-            code=$(curl -sk -o /dev/null -w "%{http_code}" "$API_BASE_URL/rest/v1/")
+            code=$(curl -sk -o /dev/null -w "%{http_code}" "$API_BASE_URL/rest/v1/" -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U")
             if [ "$code" = "200" ] || [ "$code" = "401" ]; then
               echo "Supabase backend is healthy."
               exit 0
             fi
-            echo "Not ready yet ($i/10). Sleeping 5s..."
+            echo "Not ready yet ($i/10). Status code: $code. Sleeping 5s..."
             sleep 5
           done
           echo "Backend did not respond in time."
