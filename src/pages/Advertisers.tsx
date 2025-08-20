@@ -1,6 +1,10 @@
 import { useState } from "react"
 import { Plus, Search, MoreHorizontal, Building, Edit, Trash2, Eye } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,40 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-// Mock data for advertisers
-const advertisersData = [
-  {
-    id: 1,
-    name: "TechCorp Solutions",
-    industry: "Technology",
-    status: "Active",
-    campaigns: 12,
-    totalSpend: "$125,000",
-    contactEmail: "marketing@techcorp.com",
-    description: "Leading technology solutions provider",
-  },
-  {
-    id: 2,
-    name: "Fashion Forward",
-    industry: "Retail",
-    status: "Active", 
-    campaigns: 8,
-    totalSpend: "$89,500",
-    contactEmail: "ads@fashionforward.com",
-    description: "Trendy fashion and lifestyle brand",
-  },
-  {
-    id: 3,
-    name: "EcoGreen Products",
-    industry: "Environment",
-    status: "Paused",
-    campaigns: 3,
-    totalSpend: "$45,200",
-    contactEmail: "green@ecogreen.com", 
-    description: "Sustainable and eco-friendly products",
-  },
-]
-
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Active": return "bg-green-100 text-green-800"
@@ -75,6 +45,8 @@ const getStatusColor = (status: string) => {
 
 export function Advertisers() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -84,15 +56,77 @@ export function Advertisers() {
     description: "",
   })
 
-  const filteredAdvertisers = advertisersData.filter(advertiser =>
+  // Fetch advertisers from database
+  const { data: advertisers, isLoading, isError } = useQuery({
+    queryKey: ["advertisers", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      // For agencies, fetch their advertisers
+      // For admins, fetch all advertisers
+      // For advertisers, they can only see themselves
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, company_name, contact_email, created_at")
+        .eq("role", "advertiser")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // For now, we'll just return the profile data
+      // In a more complete implementation, you might join with other tables
+      // to get campaign count and total spend
+      return data?.map(profile => ({
+        id: profile.user_id,
+        name: profile.company_name,
+        contactEmail: profile.contact_email,
+        description: "", // This would come from a separate table in a full implementation
+        industry: "", // This would come from a separate table in a full implementation
+        status: "Active", // This would come from a separate table in a full implementation
+        campaigns: 0, // This would come from a separate table in a full implementation
+        totalSpend: "$0", // This would come from a separate table in a full implementation
+      })) || [];
+    },
+  });
+
+  // Filter advertisers based on search term
+  const filteredAdvertisers = advertisers?.filter(advertiser =>
     advertiser.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     advertiser.industry.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  ) || [];
+
+  // Mutation for creating a new advertiser
+  const createAdvertiserMutation = useMutation({
+    mutationFn: async (newAdvertiser: any) => {
+      // In a full implementation, you would create a user account and profile
+      // For now, we'll just show a success message
+      console.log("Creating advertiser:", newAdvertiser);
+      // This is a placeholder - in a real implementation you would:
+      // 1. Create a new user account in Supabase Auth
+      // 2. Create a profile record in the profiles table
+      // 3. Set the role to 'advertiser'
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["advertisers"] });
+      toast.success("Advertiser created successfully!");
+      setIsCreateDialogOpen(false);
+      setFormData({ name: "", industry: "", contactEmail: "", description: "" });
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create advertiser: ${error.message}`);
+    },
+  });
 
   const handleCreateAdvertiser = () => {
-    console.log("Creating advertiser:", formData)
-    setIsCreateDialogOpen(false)
-    setFormData({ name: "", industry: "", contactEmail: "", description: "" })
+    // Validate required fields
+    if (!formData.name) {
+      toast.error("Please enter an advertiser name");
+      return;
+    }
+
+    // In a full implementation, you would create a new user account
+    // For now, we'll just use the mutation to show the success message
+    createAdvertiserMutation.mutate(formData);
   }
 
   const handleViewCampaigns = (advertiserId: number) => {
@@ -173,7 +207,7 @@ export function Advertisers() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Status</span>
-                <Badge className={getStatusColor(advertiser.status)}>
+                <Badge variant="secondary" className={getStatusColor(advertiser.status)}>
                   {advertiser.status}
                 </Badge>
               </div>

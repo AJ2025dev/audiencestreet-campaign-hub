@@ -29,49 +29,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-const performanceData = [
-  { date: '1/1', impressions: 12500, clicks: 125, spend: 245 },
-  { date: '1/2', impressions: 15200, clicks: 198, spend: 298 },
-  { date: '1/3', impressions: 18300, clicks: 234, spend: 356 },
-  { date: '1/4', impressions: 14500, clicks: 167, spend: 287 },
-  { date: '1/5', impressions: 16800, clicks: 203, spend: 334 },
-  { date: '1/6', impressions: 19200, clicks: 256, spend: 398 },
-  { date: '1/7', impressions: 21500, clicks: 289, spend: 445 },
-]
-
-const campaignData = [
-  {
-    id: 1,
-    name: "P&G Gillete",
-    status: "active",
-    impressions: "1.2M",
-    clicks: "24.5K",
-    ctr: "2.04%",
-    spend: "$8,450",
-    cpm: "$7.04"
-  },
-  {
-    id: 2,
-    name: "Apex Girl",
-    status: "paused",
-    impressions: "890K",
-    clicks: "18.2K",
-    ctr: "2.04%",
-    spend: "$6,230",
-    cpm: "$6.99"
-  },
-  {
-    id: 3,
-    name: "Jio Retail",
-    status: "active",
-    impressions: "2.1M",
-    clicks: "45.6K",
-    ctr: "2.17%",
-    spend: "$12,890",
-    cpm: "$6.14"
-  }
-]
-
 const Dashboard = () => {
   const { user } = useAuth();
   const { data: metrics } = useQuery({
@@ -85,6 +42,24 @@ const Dashboard = () => {
       return row as { total_impressions: number; total_clicks: number; total_spend_cents: number; ctr_percent: number } | null;
     },
   });
+  
+  const { data: performanceData } = useQuery({
+    queryKey: ["daily-performance", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('get_daily_performance_metrics', { days_back: 30 });
+      if (error) throw error;
+      // Convert spend from cents to dollars and format the data for the charts
+      return data.map((item: any) => ({
+        date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        impressions: item.impressions,
+        clicks: item.clicks,
+        spend: item.spend_cents / 100
+      }));
+    },
+  });
+  
   const { data: recentCampaigns } = useQuery({
     queryKey: ["recent-campaigns", user?.id],
     enabled: !!user?.id,

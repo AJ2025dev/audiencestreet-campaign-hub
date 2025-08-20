@@ -116,21 +116,28 @@ export default function AgencyDashboard() {
     },
   })
 
-  // Mock performance data - in real implementation this would come from actual metrics
-  const performanceData = [
-    { date: '1/1', spend: 2450, impressions: 125000, clicks: 2500 },
-    { date: '1/2', spend: 2980, impressions: 152000, clicks: 3040 },
-    { date: '1/3', spend: 3560, impressions: 183000, clicks: 3664 },
-    { date: '1/4', spend: 2870, impressions: 145000, clicks: 2900 },
-    { date: '1/5', spend: 3340, impressions: 168000, clicks: 3360 },
-    { date: '1/6', spend: 3980, impressions: 192000, clicks: 3840 },
-    { date: '1/7', spend: 4450, impressions: 215000, clicks: 4300 },
-  ]
+  // Fetch performance data for charts
+  const { data: performanceData } = useQuery({
+    queryKey: ["agency-daily-performance", user?.id],
+    enabled: !!user?.id && profile?.role === 'agency',
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('get_agency_daily_performance_metrics', { agency_id: user!.id, days_back: 30 });
+      if (error) throw error;
+      // Convert spend from cents to dollars and format the data for the charts
+      return data.map((item: any) => ({
+        date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        impressions: item.impressions,
+        clicks: item.clicks,
+        spend: item.spend_cents / 100
+      }));
+    },
+  });
 
-  const totalSpend = performanceData.reduce((sum, day) => sum + day.spend, 0)
-  const totalImpressions = performanceData.reduce((sum, day) => sum + day.impressions, 0)
-  const totalClicks = performanceData.reduce((sum, day) => sum + day.clicks, 0)
-  const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0
+  const totalSpend = performanceData?.reduce((sum, day) => sum + day.spend, 0) || 0;
+  const totalImpressions = performanceData?.reduce((sum, day) => sum + day.impressions, 0) || 0;
+  const totalClicks = performanceData?.reduce((sum, day) => sum + day.clicks, 0) || 0;
+  const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
 
   const activeCampaigns = campaigns?.filter(c => c.status === 'active').length || 0
 
