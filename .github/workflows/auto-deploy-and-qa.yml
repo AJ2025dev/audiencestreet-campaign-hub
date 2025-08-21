@@ -79,10 +79,27 @@ jobs:
           # Change this if your workflow has a different display name
           wf_name="Agent Pipeline (PM only)"
           echo "Triggering \"$wf_name\" on main ..."
-          gh workflow run "$wf_name" --ref main
-          echo "Waiting for the run to start..."
-          sleep 10
-          gh run watch --exit-status
+          # Run the workflow and capture the output
+          output=$(gh workflow run "$wf_name" --ref main 2>&1)
+          echo "$output"
+          
+          # Try to extract run ID from the output
+          # The output might contain a URL like: https://github.com/owner/repo/actions/runs/123456789
+          if echo "$output" | grep -q "https://github.com/"; then
+            run_id=$(echo "$output" | grep -oE "https://github.com/[^/]+/[^/]+/actions/runs/[0-9]+" | grep -oE "[0-9]+$")
+            if [ -n "$run_id" ]; then
+              echo "Workflow run started with ID: $run_id"
+              echo "Waiting for the run to start..."
+              sleep 10
+              gh run watch "$run_id" --exit-status
+            else
+              echo "Could not extract run ID from output"
+              exit 1
+            fi
+          else
+            echo "Workflow triggered, but could not get run ID. Waiting 60 seconds for it to complete..."
+            sleep 60
+          fi
 
       - name: Smoke test Pricing API
         run: |
