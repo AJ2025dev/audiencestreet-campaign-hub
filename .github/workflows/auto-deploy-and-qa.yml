@@ -69,6 +69,10 @@ jobs:
       API_BASE_URL: ${{ vars.API_BASE_URL }}
       GH_TOKEN: ${{ github.token }}   # token for gh CLI
     steps:
+      # Add this checkout step to fix the git repository issue
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       # GitHub-hosted runners already include gh; no install needed
       - name: Trigger existing Agent Pipeline workflow
         run: |
