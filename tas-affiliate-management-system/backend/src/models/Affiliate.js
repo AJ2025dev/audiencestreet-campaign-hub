@@ -40,10 +40,22 @@ const Affiliate = sequelize.define('Affiliate', {
   paymentDetails: {
     type: DataTypes.JSON,
     allowNull: true
+  },
+  affiliateNetwork: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   timestamps: true,
-  tableName: 'affiliates'
+  tableName: 'affiliates',
+  indexes: [
+    {
+      fields: ['userId']
+    },
+    {
+      fields: ['companyName']
+    }
+  ]
 });
 
 module.exports = Affiliate;

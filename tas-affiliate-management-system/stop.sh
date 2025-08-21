@@ -1,41 +1,35 @@
 #!/bin/bash
 
-# TAS Affiliate Management System Stop Script
+# Stop script for TAS Affiliate Management System
 
-echo "Stopping TAS Affiliate Management System..."
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Check if PID files exist
-if [ ! -f "backend.pid" ] || [ ! -f "frontend.pid" ]; then
-  echo "Error: PID files not found. The system may not be running."
-  exit 1
-fi
+echo -e "${YELLOW}Stopping TAS Affiliate Management System...${NC}"
 
-# Read PIDs from files
-BACKEND_PID=$(cat backend.pid)
-FRONTEND_PID=$(cat frontend.pid)
+# Find and kill processes related to the application
+PIDS=$(pgrep -f "tas-affiliate-management-system" 2>/dev/null || true)
 
-# Stop backend
-if kill -0 $BACKEND_PID 2>/dev/null; then
-  echo "Stopping backend (PID: $BACKEND_PID)..."
-  kill $BACKEND_PID
-  echo "Backend stopped."
+if [ -z "$PIDS" ]; then
+  echo -e "${GREEN}No running TAS Affiliate Management System processes found.${NC}"
 else
-  echo "Backend (PID: $BACKEND_PID) is not running."
+  echo -e "${YELLOW}Killing processes: $PIDS${NC}"
+  kill $PIDS 2>/dev/null || true
+  echo -e "${GREEN}TAS Affiliate Management System stopped.${NC}"
 fi
 
-# Stop frontend
-if kill -0 $FRONTEND_PID 2>/dev/null; then
-  echo "Stopping frontend (PID: $FRONTEND_PID)..."
-  kill $FRONTEND_PID
-  echo "Frontend stopped."
-else
-  echo "Frontend (PID: $FRONTEND_PID) is not running."
-fi
+# Also try to kill processes by port
+PORTS="3000 3001 5173"
 
-# Remove PID files
-rm -f backend.pid frontend.pid
+for PORT in $PORTS; do
+  PID=$(lsof -ti:$PORT 2>/dev/null || true)
+  if [ ! -z "$PID" ]; then
+    echo -e "${YELLOW}Killing process on port $PORT (PID: $PID)${NC}"
+    kill $PID 2>/dev/null || true
+  fi
+done
 
-# Remove log files
-rm -f backend.log frontend.log
-
-echo "TAS Affiliate Management System stopped successfully."
+echo -e "${GREEN}Stop script completed.${NC}"

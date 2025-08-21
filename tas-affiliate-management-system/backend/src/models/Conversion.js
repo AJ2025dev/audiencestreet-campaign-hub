@@ -50,10 +50,44 @@ const Conversion = sequelize.define('Conversion', {
   metadata: {
     type: DataTypes.JSON,
     allowNull: true
+  },
+  isDuplicate: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  fraudScore: {
+    type: DataTypes.DECIMAL(3, 2),
+    allowNull: true
+  },
+  conversionTime: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+  referringUrl: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   timestamps: true,
-  tableName: 'conversions'
+  tableName: 'conversions',
+  indexes: [
+    {
+      fields: ['affiliateId']
+    },
+    {
+      fields: ['offerId']
+    },
+    {
+      fields: ['campaignId']
+    },
+    {
+      fields: ['createdAt']
+    },
+    {
+      fields: ['conversionTime']
+    }
+  ]
 });
 
 module.exports = Conversion;

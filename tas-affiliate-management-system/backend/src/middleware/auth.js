@@ -31,13 +31,35 @@ const authenticate = async (req, res, next) => {
       });
     }
     
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'User account is deactivated'
+      });
+    }
+    
     // Attach user to request object
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Token has expired'
+      });
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Invalid token'
+      });
+    }
+    
+    return res.status(500).json({
       status: 'error',
-      message: 'Invalid or expired token'
+      message: 'Authentication failed'
     });
   }
 };
@@ -66,7 +88,29 @@ const authorize = (...roles) => {
   };
 };
 
+/**
+ * Admin authorization middleware
+ */
+const isAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Authentication required'
+    });
+  }
+  
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Admin access required'
+    });
+  }
+  
+  next();
+};
+
 module.exports = {
   authenticate,
-  authorize
+  authorize,
+  isAdmin
 };

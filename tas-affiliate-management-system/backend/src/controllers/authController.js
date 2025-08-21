@@ -1,5 +1,5 @@
 const { User, Advertiser, Affiliate } = require('../models');
-const { hashPassword, comparePassword, generateToken } = require('../utils/auth');
+const { hashPassword, comparePassword, generateToken, validatePassword } = require('../utils/auth');
 
 /**
  * Register a new user
@@ -16,6 +16,24 @@ const register = async (req, res) => {
       return res.status(400).json({
         status: 'error',
         message: 'User with this email already exists'
+      });
+    }
+    
+    // Validate role
+    if (!['admin', 'advertiser', 'affiliate'].includes(role)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid role'
+      });
+    }
+    
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Password does not meet requirements',
+        details: passwordValidation
       });
     }
     
@@ -39,7 +57,8 @@ const register = async (req, res) => {
         websiteUrl: companyDetails.websiteUrl,
         contactEmail: email,
         contactPhone: companyDetails.contactPhone,
-        billingAddress: companyDetails.billingAddress
+        billingAddress: companyDetails.billingAddress,
+        paymentMethod: companyDetails.paymentMethod
       });
     } else if (role === 'affiliate' && companyDetails) {
       await Affiliate.create({
@@ -48,7 +67,8 @@ const register = async (req, res) => {
         websiteUrl: companyDetails.websiteUrl,
         contactEmail: email,
         contactPhone: companyDetails.contactPhone,
-        paymentDetails: companyDetails.paymentDetails
+        paymentDetails: companyDetails.paymentDetails,
+        affiliateNetwork: companyDetails.affiliateNetwork
       });
     }
     
@@ -61,7 +81,8 @@ const register = async (req, res) => {
       email: user.email,
       role: user.role,
       firstName: user.firstName,
-      lastName: user.lastName
+      lastName: user.lastName,
+      lastLogin: user.lastLogin
     };
     
     res.status(201).json({
@@ -73,6 +94,7 @@ const register = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error registering user',
@@ -99,6 +121,14 @@ const login = async (req, res) => {
       });
     }
     
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Account is deactivated'
+      });
+    }
+    
     // Check password
     const isPasswordValid = await comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
@@ -107,6 +137,9 @@ const login = async (req, res) => {
         message: 'Invalid credentials'
       });
     }
+    
+    // Update last login
+    await user.update({ lastLogin: new Date() });
     
     // Generate token
     const token = generateToken({ id: user.id, role: user.role });
@@ -117,7 +150,8 @@ const login = async (req, res) => {
       email: user.email,
       role: user.role,
       firstName: user.firstName,
-      lastName: user.lastName
+      lastName: user.lastName,
+      lastLogin: user.lastLogin
     };
     
     res.status(200).json({
@@ -129,6 +163,7 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error logging in',
@@ -182,6 +217,7 @@ const getProfile = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Get profile error:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error fetching profile',
@@ -190,8 +226,67 @@ const getProfile = async (req, res) => {
   }
 };
 
+/**
+ * Update user profile
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+const updateProfile = async (req, res) => {
+  try {
+    const { firstName, lastName, ...profileData } = req.body;
+    
+    // Update user
+    await User.update({
+      firstName,
+      lastName
+    }, {
+      where: { id: req.user.id }
+    });
+    
+    // Update role-specific profile
+    if (req.user.role === 'advertiser') {
+      await Advertiser.update(profileData, {
+        where: { userId: req.user.id }
+      });
+    } else if (req.user.role === 'affiliate') {
+      await Affiliate.update(profileData, {
+        where: { userId: req.user.id }
+      });
+    }
+    
+    // Get updated user with profile
+    const user = await User.findByPk(req.user.id, {
+      include: req.user.role === 'advertiser' ? 
+        [{ model: Advertiser, as: 'advertiser' }] : 
+        req.user.role === 'affiliate' ? 
+        [{ model: Affiliate, as: 'affiliate' }] : 
+        []
+    });
+    
+    // Remove password hash from response
+    const userData = user.toJSON();
+    delete userData.passwordHash;
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Profile updated successfully',
+      data: {
+        user: userData
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error updating profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : {}
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
-  getProfile
+  getProfile,
+  updateProfile
 };

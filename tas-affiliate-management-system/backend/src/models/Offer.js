@@ -48,10 +48,27 @@ const Offer = sequelize.define('Offer', {
     validate: {
       isUrl: true
     }
+  },
+  conversionPixel: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  cookieDuration: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 30 // days
   }
 }, {
   timestamps: true,
-  tableName: 'offers'
+  tableName: 'offers',
+  indexes: [
+    {
+      fields: ['advertiserId']
+    },
+    {
+      fields: ['status']
+    }
+  ]
 });
 
 module.exports = Offer;

@@ -34,10 +34,20 @@ const User = sequelize.define('User', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  lastLogin: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   timestamps: true,
-  tableName: 'users'
+  tableName: 'users',
+  indexes: [
+    {
+      unique: true,
+      fields: ['email']
+    }
+  ]
 });
 
 module.exports = User;

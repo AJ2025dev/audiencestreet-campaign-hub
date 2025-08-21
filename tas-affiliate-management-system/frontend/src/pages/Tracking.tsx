@@ -1,168 +1,282 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
-interface Conversion {
-  id: string;
-  offerName: string;
-  date: string;
-  payoutType: string;
-  amount: number;
-  status: 'pending' | 'approved' | 'rejected';
-}
-
 const Tracking: React.FC = () => {
   const { user } = useAuth();
-  const [conversions, setConversions] = useState<Conversion[]>([
+  const [trackingLinks, setTrackingLinks] = useState<any[]>([
     {
-      id: '1',
-      offerName: 'Summer Sale 2023',
-      date: '2023-08-15',
-      payoutType: 'CPA',
-      amount: 25.00,
-      status: 'approved'
+      id: 1,
+      offerName: 'Premium Subscription',
+      advertiser: 'TechCorp Inc.',
+      url: 'https://tracking.example.com/click?offer=1&aff=123&tid=abc123',
+      clicks: 124,
+      conversions: 3,
+      conversionRate: '2.4%',
+      earnings: '$75.00',
+      status: 'active'
     },
     {
-      id: '2',
-      offerName: 'New Product Launch',
-      date: '2023-08-10',
-      payoutType: 'CPA',
-      amount: 25.00,
-      status: 'pending'
+      id: 2,
+      offerName: 'Free Trial Sign-up',
+      advertiser: 'Software Solutions Ltd.',
+      url: 'https://tracking.example.com/click?offer=2&aff=123&tid=def456',
+      clicks: 86,
+      conversions: 7,
+      conversionRate: '8.1%',
+      earnings: '$35.00',
+      status: 'active'
     },
     {
-      id: '3',
-      offerName: 'Back to School',
-      date: '2023-08-05',
-      payoutType: 'CPA',
-      amount: 25.00,
-      status: 'approved'
+      id: 3,
+      offerName: 'E-commerce Purchase',
+      advertiser: 'Online Retail Co.',
+      url: 'https://tracking.example.com/click?offer=3&aff=123&tid=ghi789',
+      clicks: 42,
+      conversions: 1,
+      conversionRate: '2.4%',
+      earnings: '$15.00',
+      status: 'paused'
     }
   ]);
 
-  if (!user) {
-    return <div>Loading...</div>;
-  }
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState('');
+
+  const handleCreateLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedOffer) return;
+    
+    const offer = trackingLinks.find(link => link.offerName === selectedOffer);
+    if (!offer) return;
+    
+    const newLink = {
+      id: trackingLinks.length + 1,
+      offerName: offer.offerName,
+      advertiser: offer.advertiser,
+      url: `https://tracking.example.com/click?offer=${offer.id}&aff=123&tid=new${Date.now()}`,
+      clicks: 0,
+      conversions: 0,
+      conversionRate: '0%',
+      earnings: '$0.00',
+      status: 'active'
+    };
+    
+    setTrackingLinks([newLink, ...trackingLinks]);
+    setSelectedOffer('');
+    setShowCreateForm(false);
+  };
+
+  const toggleLinkStatus = (id: number) => {
+    setTrackingLinks(trackingLinks.map(link => 
+      link.id === id 
+        ? { ...link, status: link.status === 'active' ? 'paused' : 'active' } 
+        : link
+    ));
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert('Tracking link copied to clipboard!');
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {user.role === 'advertiser' ? 'Conversion Tracking' : 'Earnings Tracking'}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {user.role === 'advertiser' 
-              ? 'Track conversions and performance for your campaigns' 
-              : 'Track your earnings and commission payments'}
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Tracking Links
+            </h1>
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              {showCreateForm ? 'Cancel' : 'Create New Link'}
+            </button>
+          </div>
+
+          {/* Create Tracking Link Form */}
+          {showCreateForm && (
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+              <div className="px-4 py-5 sm:px-6">
+                <h2 className="text-lg leading-6 font-medium text-gray-900">
+                  Create New Tracking Link
+                </h2>
+                <form onSubmit={handleCreateLink} className="mt-4">
+                  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                    <div className="sm:col-span-4">
+                      <label htmlFor="offer" className="block text-sm font-medium text-gray-700">
+                        Select Offer
+                      </label>
+                      <div className="mt-1">
+                        <select
+                          id="offer"
+                          value={selectedOffer}
+                          onChange={(e) => setSelectedOffer(e.target.value)}
+                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          required
+                        >
+                          <option value="">Choose an offer</option>
+                          {trackingLinks.map((link) => (
+                            <option key={link.id} value={link.offerName}>
+                              {link.offerName} - {link.advertiser}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="sm:col-span-6">
+                      <button
+                        type="submit"
+                        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Generate Tracking Link
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Tracking Links Table */}
+          <div className="bg-white shadow overflow-hidden sm:rounded-md">
             <div className="px-4 py-5 sm:px-6">
-              <h2 className="text-lg font-medium text-gray-900">
-                {user.role === 'advertiser' ? 'Recent Conversions' : 'Recent Earnings'}
+              <h2 className="text-lg leading-6 font-medium text-gray-900">
+                Your Tracking Links
+              </h2>
+            </div>
+            <div className="border-t border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Offer
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Advertiser
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tracking Link
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Performance
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Earnings
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {trackingLinks.map((link) => (
+                    <tr key={link.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{link.offerName}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {link.advertiser}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <span className="truncate max-w-xs">{link.url}</span>
+                          <button
+                            onClick={() => copyToClipboard(link.url)}
+                            className="ml-2 text-indigo-600 hover:text-indigo-900"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>Clicks: {link.clicks}</div>
+                        <div>Conversions: {link.conversions}</div>
+                        <div>Rate: {link.conversionRate}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {link.earnings}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          link.status === 'active' ? 'bg-green-100 text-green-800' :
+                          link.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {link.status.charAt(0).toUpperCase() + link.status.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => toggleLinkStatus(link.id)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        >
+                          {link.status === 'active' ? 'Pause' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => copyToClipboard(link.url)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Copy Link
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Postback Configuration */}
+          <div className="mt-8 bg-white shadow overflow-hidden sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6">
+              <h2 className="text-lg leading-6 font-medium text-gray-900">
+                Postback Configuration
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                {user.role === 'advertiser' 
-                  ? 'View conversion data for your offers' 
-                  : 'View your recent earnings from promoted offers'}
+                Configure server-to-server postbacks for conversion tracking
               </p>
             </div>
             <div className="border-t border-gray-200">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {user.role === 'advertiser' ? 'Offer' : 'Offer'}
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Payout Type
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {conversions.map((conversion) => (
-                      <tr key={conversion.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{conversion.offerName}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{conversion.date}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{conversion.payoutType}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">${conversion.amount.toFixed(2)}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            conversion.status === 'approved' ? 'bg-green-100 text-green-800' :
-                            conversion.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {conversion.status.charAt(0).toUpperCase() + conversion.status.slice(1)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          
-          {user.role === 'affiliate' && (
-            <div className="mt-8 bg-white shadow overflow-hidden sm:rounded-lg">
               <div className="px-4 py-5 sm:px-6">
-                <h2 className="text-lg font-medium text-gray-900">Tracking Links</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Generate and manage your tracking links for offers
-                </p>
-              </div>
-              <div className="border-t border-gray-200">
-                <div className="p-6">
-                  <div className="flex">
-                    <div className="flex-1 min-w-0">
+                <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                  <div className="sm:col-span-4">
+                    <label htmlFor="postback-url" className="block text-sm font-medium text-gray-700">
+                      Global Postback URL
+                    </label>
+                    <div className="mt-1 flex">
                       <input
                         type="text"
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="Enter offer URL"
-                      />
-                    </div>
-                    <button className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                      Generate Link
-                    </button>
-                  </div>
-                  <div className="mt-4">
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        value="https://track.tas-affiliate.com/click?offer_id=123&aff_id=456&source=summer_sale"
+                        id="postback-url"
+                        value="https://yourwebsite.com/postback?aff={aff_id}&offer={offer_id}&payout={payout}"
                         readOnly
+                        className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md focus:ring-indigo-500 focus:border-indigo-500 text-sm border-gray-300"
                       />
-                      <button className="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                      <button
+                        onClick={() => copyToClipboard('https://yourwebsite.com/postback?aff={aff_id}&offer={offer_id}&payout={payout}')}
+                        className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm"
+                      >
                         Copy
                       </button>
                     </div>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Use this URL in your advertiser's platform to set up postbacks
+                    </p>
+                  </div>
+                  <div className="sm:col-span-6">
+                    <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                      Save Postback Settings
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

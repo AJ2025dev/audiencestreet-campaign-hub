@@ -40,10 +40,22 @@ const Advertiser = sequelize.define('Advertiser', {
   billingAddress: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  paymentMethod: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   timestamps: true,
-  tableName: 'advertisers'
+  tableName: 'advertisers',
+  indexes: [
+    {
+      fields: ['userId']
+    },
+    {
+      fields: ['companyName']
+    }
+  ]
 });
 
 module.exports = Advertiser;

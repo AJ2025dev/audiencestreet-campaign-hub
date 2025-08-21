@@ -1,73 +1,146 @@
-# Welcome to your Lovable project
+# TAS Affiliate Management System
 
-## Project info
+Performance marketing platform for advertiser and affiliate management with AI creative generation.
 
-**URL**: https://lovable.dev/projects/659000ac-be11-4322-aab0-8a31f355427d
+## Overview
 
-## How can I edit this code?
+The TAS Affiliate Management System is a comprehensive platform that connects advertisers with affiliates, enabling efficient campaign management, tracking, and optimization. The system provides features for advertiser management, affiliate management, campaign tracking, and AI-powered creative generation.
 
-There are several ways of editing your application.
+## Key Features
 
-**Use Lovable**
+### Advertiser Management
+- Campaign creation and management
+- Budget allocation and control
+- Performance analytics and reporting
+- Integration with Meta and Google Ads APIs
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/659000ac-be11-4322-aab0-8a31f355427d) and start prompting.
+### Affiliate Management
+- Offer browsing and selection
+- Tracking link generation
+- Postback configuration
+- Earnings tracking and reporting
 
-Changes made via Lovable will be committed automatically to this repo.
+### Tracking Mechanisms
+- Postback URL generation and processing
+- Pixel tracking implementation
+- Event tracking and conversion measurement
+- Real-time analytics dashboard
 
-**Use your preferred IDE**
+### AI Creative Generation
+- Text-to-image generation using AI
+- Text-to-video generation using AI
+- Template-based creative creation
+- Creative optimization and A/B testing
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Technology Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Frontend
+- React 18 with TypeScript
+- TailwindCSS with shadcn/ui components
+- Vite build tool
+- React Router for navigation
 
-Follow these steps:
+### Backend
+- Node.js with Express.js
+- TypeScript
+- PostgreSQL database
+- Redis for caching
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Infrastructure
+- Docker for containerization
+- GitHub Actions for CI/CD
+- AWS/GCP for cloud hosting
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Project Structure
 
-# Step 3: Install the necessary dependencies.
-npm i
+```
+tas-affiliate-management-system/
+├── backend/
+├── frontend/
+├── database/
+├── docs/
+└── scripts/
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+For detailed project structure, see [project-structure.md](project-structure.md).
+
+## Architecture
+
+For detailed system architecture, see [tas-architecture.md](docs/tas-architecture.md).
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL
+- Docker (optional)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/YOUR_USERNAME/tas-affiliate-management-system.git
+cd tas-affiliate-management-system
+```
+
+2. Install backend dependencies:
+```bash
+cd backend
+npm install
+```
+
+3. Install frontend dependencies:
+```bash
+cd frontend
+npm install
+```
+
+4. Set up environment variables:
+```bash
+# Copy example files and update with your values
+cp .env.example .env
+```
+
+5. Run database migrations:
+```bash
+# Run migration scripts
+```
+
+### Development
+
+1. Start the backend server:
+```bash
+cd backend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+2. Start the frontend development server:
+```bash
+cd frontend
+npm run dev
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Documentation
 
-**Use GitHub Codespaces**
+- [Architecture Design](docs/tas-architecture.md)
+- [Detailed Planning](docs/tas-detailed-planning.md)
+- [Project Structure](docs/project-structure.md)
+- [GitHub Setup Instructions](docs/github-setup-instructions.md)
+- [API Documentation](docs/api-docs/)
+- [User Guides](docs/user-guides/)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Contributing
 
-## What technologies are used for this project?
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
 
-This project is built with:
+## License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## How can I deploy this project?
+## Contact
 
-Simply open [Lovable](https://lovable.dev/projects/659000ac-be11-4322-aab0-8a31f355427d) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+For questions or support, please open an issue on GitHub.

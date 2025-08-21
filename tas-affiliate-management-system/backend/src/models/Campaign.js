@@ -42,10 +42,34 @@ const Campaign = sequelize.define('Campaign', {
   dailyBudget: {
     type: DataTypes.DECIMAL(12, 2),
     allowNull: true
+  },
+  currency: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'USD'
+  },
+  targeting: {
+    type: DataTypes.JSON,
+    allowNull: true
+  },
+  biddingStrategy: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   timestamps: true,
-  tableName: 'campaigns'
+  tableName: 'campaigns',
+  indexes: [
+    {
+      fields: ['advertiserId']
+    },
+    {
+      fields: ['status']
+    },
+    {
+      fields: ['startDate', 'endDate']
+    }
+  ]
 });
 
 module.exports = Campaign;

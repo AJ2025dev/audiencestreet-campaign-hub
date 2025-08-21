@@ -1,39 +1,49 @@
 #!/bin/bash
 
-# TAS Affiliate Management System Startup Script
+# Start script for TAS Affiliate Management System
 
-echo "Starting TAS Affiliate Management System..."
+# Exit on any error
+set -e
 
-# Check if we're in the correct directory
-if [ ! -d "backend" ] || [ ! -d "frontend" ]; then
-  echo "Error: Please run this script from the root directory of the TAS Affiliate Management System"
-  exit 1
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}Starting TAS Affiliate Management System...${NC}"
+
+# Check if required environment variables are set
+if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ]; then
+  echo -e "${YELLOW}Warning: Database environment variables not set. Using default values from .env file.${NC}"
 fi
 
-# Start backend in background
-echo "Starting backend server..."
+# Start backend
+echo -e "${GREEN}Starting backend server...${NC}"
 cd backend
-npm run dev > ../backend.log 2>&1 &
+npm run dev &
 BACKEND_PID=$!
 cd ..
 
-# Start frontend in background
-echo "Starting frontend server..."
+# Start frontend
+echo -e "${GREEN}Starting frontend server...${NC}"
 cd frontend
-npm run dev > ../frontend.log 2>&1 &
+npm run dev &
 FRONTEND_PID=$!
 cd ..
 
-echo "Backend PID: $BACKEND_PID"
-echo "Frontend PID: $FRONTEND_PID"
+# Function to stop both servers
+stop_servers() {
+  echo -e "${YELLOW}Stopping servers...${NC}"
+  kill $BACKEND_PID $FRONTEND_PID 2>/dev/null || true
+  echo -e "${GREEN}Servers stopped.${NC}"
+  exit 0
+}
 
-echo "Servers started successfully!"
-echo "Backend API available at: http://localhost:3000"
-echo "Frontend app available at: http://localhost:5173"
+# Trap SIGINT and SIGTERM to stop servers gracefully
+trap stop_servers SIGINT SIGTERM
 
-echo ""
-echo "To stop the servers, run: ./stop.sh"
+# Wait for both processes
+wait $BACKEND_PID $FRONTEND_PID
 
-# Save PIDs to file for stopping later
-echo "$BACKEND_PID" > backend.pid
-echo "$FRONTEND_PID" > frontend.pid
+echo -e "${GREEN}TAS Affiliate Management System stopped.${NC}"

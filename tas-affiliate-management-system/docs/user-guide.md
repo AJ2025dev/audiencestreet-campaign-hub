@@ -13,24 +13,19 @@
 
 ## Introduction
 
-Welcome to the TAS Affiliate Management System! This platform connects advertisers with affiliates to create successful marketing campaigns. Whether you're an advertiser looking to promote your products or an affiliate looking to earn commissions, this guide will help you get the most out of the system.
+The TAS Affiliate Management System is a comprehensive platform designed to connect advertisers with affiliates for performance marketing campaigns. This guide will help you navigate and utilize all the features of the system.
 
 ## Getting Started
 
 ### Registration
-1. Visit the registration page at `/register`
-2. Fill in your details:
-   - First Name
-   - Last Name
-   - Email Address
-   - Password
-   - Company Name
-   - Role (Advertiser or Affiliate)
-3. Click "Create Account"
-4. You'll be redirected to your dashboard
+1. Visit the registration page
+2. Fill in your details (name, email, company name)
+3. Select your role (Advertiser or Affiliate)
+4. Create a strong password
+5. Verify your email address
 
 ### Login
-1. Visit the login page at `/login`
+1. Visit the login page
 2. Enter your email and password
 3. Click "Sign In"
 4. You'll be redirected to your dashboard
@@ -38,118 +33,115 @@ Welcome to the TAS Affiliate Management System! This platform connects advertise
 ## User Roles
 
 ### Advertiser
-Advertisers create offers and campaigns to promote their products or services. They can track performance, generate AI creatives, and manage their affiliate relationships.
+Advertisers create and manage marketing campaigns, set up offers for affiliates, and track campaign performance.
 
 ### Affiliate
-Affiliates browse offers from advertisers, generate tracking links, and earn commissions for successful conversions. They can track their earnings and view payment history.
+Affiliates browse available offers, generate tracking links, and earn commissions for successful conversions.
+
+### Administrator
+Administrators manage the overall system, user accounts, and system settings.
 
 ## Advertiser Guide
 
-### Creating an Offer
-1. Navigate to the "Offers" page
-2. Click "Create New Offer"
-3. Fill in the offer details:
-   - Name
-   - Description
-   - Payout Type (CPA, CPC, CPL, CPS)
-   - Payout Amount
-4. Click "Save Offer"
+### Dashboard Overview
+The advertiser dashboard provides an overview of your campaigns, offers, and performance metrics.
 
-### Creating a Campaign
-1. Navigate to the "Campaigns" page
+### Creating Campaigns
+1. Navigate to the "Campaigns" section
 2. Click "Create New Campaign"
-3. Fill in the campaign details:
-   - Name
+3. Fill in campaign details:
+   - Campaign name
    - Description
-   - Budget
-   - Start and End Dates
-4. Associate with an offer
-5. Click "Save Campaign"
+   - Start and end dates
+   - Budget allocation
+4. Save and activate the campaign
 
-### Viewing Analytics
-1. Navigate to the "Analytics" page
-2. Select a date range
-3. View key metrics:
-   - Impressions
-   - Clicks
-   - Conversions
-   - Revenue
-   - ROI
+### Managing Offers
+1. Go to the "Offers" section
+2. Click "Create New Offer"
+3. Enter offer details:
+   - Offer name and description
+   - Payout type (CPA, CPL, CPS, etc.)
+   - Payout amount
+   - Tracking URL
+4. Set offer status to "Active"
+5. Share the offer with affiliates
 
-### Generating AI Creatives
-1. Navigate to the "AI Creatives" page
-2. Describe the creative you want to generate
-3. Click "Generate Creative"
-4. Review and download the generated creative
+### Performance Analytics
+1. Access the "Analytics" section
+2. View key metrics:
+   - Click-through rates
+   - Conversion rates
+   - Revenue and ROI
+   - Top-performing affiliates
+3. Export reports as needed
 
 ## Affiliate Guide
 
-### Browsing Offers
-1. Navigate to the "Offers" page
-2. Browse available offers
-3. Use filters to find relevant offers
-4. Click "View Details" to learn more
+### Dashboard Overview
+The affiliate dashboard shows your available offers, tracking links, and earnings.
 
-### Selecting an Offer
-1. On the offer details page, click "Select Offer"
-2. Review the terms and conditions
-3. Click "Confirm Selection"
-4. The offer will appear in your "My Offers" section
+### Browsing Offers
+1. Navigate to the "Offers" section
+2. Browse available offers
+3. Filter by category, payout type, or advertiser
+4. Click on an offer to view details
 
 ### Generating Tracking Links
-1. Navigate to the "Tracking" page
-2. Find the offer you want to promote
-3. Click "Generate Link"
-4. Customize tracking parameters if needed
-5. Copy the tracking link
+1. Select an offer you want to promote
+2. Click "Get Tracking Link"
+3. Customize parameters if needed
+4. Copy the tracking link
+5. Use the link in your marketing efforts
+
+### Managing Links
+1. Go to the "Tracking" section
+2. View all your tracking links
+3. Monitor performance metrics for each link
+4. Edit or delete links as needed
 
 ### Viewing Earnings
-1. Navigate to the "Earnings" page
-2. View your recent earnings
-3. Filter by date range or offer
-4. Download earnings reports
+1. Access the "Earnings" section
+2. View your commission history
+3. Check payment status
+4. Request payments when eligible
 
 ## Tracking and Analytics
 
 ### Conversion Tracking
-The system automatically tracks conversions through:
+The system tracks conversions through:
 - Postback URLs
 - Pixel tracking
 - Server-to-server tracking
 
-### Performance Metrics
-Key metrics tracked include:
-- Click-through Rate (CTR)
-- Conversion Rate
-- Earnings Per Click (EPC)
-- Return on Ad Spend (ROAS)
+### Real-time Analytics
+Monitor your campaign performance in real-time with:
+- Click tracking
+- Conversion tracking
+- Revenue reporting
+- Geographic and demographic data
 
 ### Reporting
-Generate reports for:
-- Daily/Weekly/Monthly performance
-- Offer-specific performance
-- Affiliate performance (for advertisers)
-- Earnings history (for affiliates)
+Generate detailed reports on:
+- Campaign performance
+- Affiliate performance
+- Financial summaries
+- Custom date ranges
 
 ## AI Creative Generation
 
-### Getting Started
-1. Navigate to the "AI Creatives" page
-2. Describe what you want to create
-3. Select creative type (image or video)
+### Generating Creatives
+1. Navigate to the "AI Creatives" section
+2. Describe the creative you want to generate
+3. Select creative type (image, video, etc.)
 4. Click "Generate"
+5. Review and download the creatives
 
-### Best Practices
-- Be specific in your descriptions
-- Include brand colors or themes
-- Specify the intended use (social media, web banner, etc.)
-- Request multiple variations for A/B testing
-
-### Managing Creatives
-- Download generated creatives
-- Organize creatives by campaign
-- Share creatives with team members
-- Request modifications to existing creatives
+### Creative Optimization
+- A/B test different creatives
+- Analyze performance metrics
+- Select top-performing creatives
+- Generate variations of successful creatives
 
 ## Troubleshooting
 
@@ -157,57 +149,48 @@ Generate reports for:
 
 #### Login Problems
 - Ensure your email and password are correct
-- Check that your account is active
+- Check if your account is verified
 - Reset your password if needed
 
 #### Tracking Issues
-- Verify postback URLs are correctly configured
-- Check that tracking pixels are properly installed
-- Contact support if conversions aren't tracking
+- Verify tracking URLs are correct
+- Check postback configurations
+- Ensure pixels are properly implemented
 
-#### Creative Generation Issues
-- Ensure your prompt is clear and specific
-- Try different descriptions if results aren't satisfactory
-- Check that you have sufficient credits for generation
+#### Performance Issues
+- Clear your browser cache
+- Try a different browser
+- Check your internet connection
 
 ### Contact Support
 If you're experiencing issues not covered in this guide:
-1. Email: support@tas-affiliate.com
-2. Phone: (555) 123-4567
-3. Live Chat: Available on the website during business hours
+1. Visit the "Support" section
+2. Submit a support ticket with detailed information
+3. Include screenshots if applicable
+4. Our support team will respond within 24 hours
 
 ## FAQ
 
 ### How do I reset my password?
-1. Click "Forgot Password" on the login page
-2. Enter your email address
-3. Check your email for a reset link
-4. Follow the instructions to set a new password
+Click "Forgot Password" on the login page and follow the instructions.
 
-### How are commissions paid?
-Commissions are paid monthly via:
-- Direct deposit
-- PayPal
-- Check by mail
+### How are commissions calculated?
+Commissions are calculated based on the payout terms set by advertisers for each offer.
 
-Payment thresholds and schedules are outlined in your affiliate agreement.
+### How often are payments processed?
+Payments are processed monthly for earnings that meet the minimum threshold.
 
 ### Can I promote offers on social media?
-Yes! Most offers can be promoted on social media platforms. Check each offer's terms for specific restrictions.
+Yes, but you must comply with the terms and conditions of each platform.
 
-### How do I get approved for an offer?
-1. Browse available offers
-2. Click "Apply" on offers that interest you
-3. Provide any requested information
-4. Wait for approval from the advertiser
+### How do I get approved for offers?
+Some offers require manual approval. Check the offer details for specific requirements.
 
 ### What if I have questions about an offer?
-Contact the advertiser directly through the messaging system or email provided in the offer details.
+Contact the advertiser directly through the messaging system in the platform.
 
 ## Conclusion
 
-The TAS Affiliate Management System is designed to make performance marketing easy and effective for both advertisers and affiliates. By following this guide, you should be able to navigate the platform with confidence and achieve your marketing goals.
+This user guide provides an overview of the TAS Affiliate Management System. For more detailed information or specific questions, please refer to our knowledge base or contact our support team.
 
-For the latest updates and features, check our blog at blog.tas-affiliate.com.
-
-Happy marketing!
+We're constantly improving the platform based on user feedback, so don't hesitate to share your suggestions with us.

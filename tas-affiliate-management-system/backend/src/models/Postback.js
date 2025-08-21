@@ -42,10 +42,41 @@ const Postback = sequelize.define('Postback', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  lastSuccess: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  failureCount: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  maxRetries: {
+    type: DataTypes.INTEGER,
+    defaultValue: 3
+  },
+  timeout: {
+    type: DataTypes.INTEGER,
+    defaultValue: 30 // seconds
+  },
+  customParameters: {
+    type: DataTypes.JSON,
+    allowNull: true
   }
 }, {
   timestamps: true,
-  tableName: 'postbacks'
+  tableName: 'postbacks',
+  indexes: [
+    {
+      fields: ['affiliateId']
+    },
+    {
+      fields: ['offerId']
+    },
+    {
+      fields: ['isActive']
+    }
+  ]
 });
 
 module.exports = Postback;

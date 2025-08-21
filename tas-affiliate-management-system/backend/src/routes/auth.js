@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 
 /**
  * @route POST /api/auth/register
@@ -23,5 +23,46 @@ router.post('/login', authController.login);
  * @access Private
  */
 router.get('/profile', authenticate, authController.getProfile);
+
+/**
+ * @route PUT /api/auth/profile
+ * @desc Update user profile
+ * @access Private
+ */
+router.put('/profile', authenticate, authController.updateProfile);
+
+/**
+ * @route POST /api/auth/logout
+ * @desc Logout user (client-side token invalidation)
+ * @access Private
+ */
+router.post('/logout', authenticate, (req, res) => {
+  // For JWT, logout is handled client-side by removing the token
+  // Server-side we could add the token to a blacklist if needed
+  res.status(200).json({
+    status: 'success',
+    message: 'Logged out successfully'
+  });
+});
+
+/**
+ * @route POST /api/auth/refresh
+ * @desc Refresh JWT token
+ * @access Private
+ */
+router.post('/refresh', authenticate, (req, res) => {
+  // Generate new token with extended expiration
+  const newToken = require('../utils/auth').generateToken({
+    id: req.user.id,
+    role: req.user.role
+  });
+  
+  res.status(200).json({
+    status: 'success',
+    data: {
+      token: newToken
+    }
+  });
+});
 
 module.exports = router;

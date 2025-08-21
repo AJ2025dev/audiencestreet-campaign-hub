@@ -1,42 +1,41 @@
-import React, { createContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import authService from '../services/authService';
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import authService, { User } from '../services/authService';
 
-// Define types
-interface User {
-  id: string;
-  email: string;
-  role: 'admin' | 'advertiser' | 'affiliate';
-  firstName: string;
-  lastName: string;
-  [key: string]: any; // For additional properties
-}
-
+// Define context type
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<any>;
-  register: (userData: any) => Promise<any>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: any) => Promise<void>;
   logout: () => void;
+  updateProfile: (profileData: any) => Promise<void>;
+  isAuthenticated: boolean;
   loading: boolean;
+  error: string | null;
+  clearError: () => void;
 }
 
 // Create context
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Clear error
+  const clearError = () => {
+    setError(null);
+  };
 
   // Check if user is authenticated on initial load
   useEffect(() => {
     const initializeAuth = async () => {
       if (authService.isAuthenticated()) {
         try {
-          const response = await authService.getProfile();
-          setUser(response.data.user);
-        } catch (error) {
+          const userData = await authService.getProfile();
+          setUser(userData);
+        } catch (err) {
           // If token is invalid, remove it
           authService.logout();
         }
@@ -47,45 +46,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     initializeAuth();
   }, []);
 
-  const login = async (credentials: { email: string; password: string }) => {
+  // Login function
+  const login = async (email: string, password: string) => {
     try {
-      const response = await authService.login(credentials);
-      const { user, token } = response.data;
-      
-      // Set auth token
-      authService.setAuthToken(token);
-      
-      // Set user state
-      setUser(user);
-      
-      return response;
-    } catch (error) {
-      throw error;
+      clearError();
+      const authResponse = await authService.login({ email, password });
+      authService.setAuthToken(authResponse.token);
+      setUser(authResponse.user);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Login failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
+  // Register function
   const register = async (userData: any) => {
     try {
-      const response = await authService.register(userData);
-      const { user, token } = response.data;
-      
-      // Set auth token
-      authService.setAuthToken(token);
-      
-      // Set user state
-      setUser(user);
-      
-      return response;
-    } catch (error) {
-      throw error;
+      clearError();
+      const authResponse = await authService.register(userData);
+      authService.setAuthToken(authResponse.token);
+      setUser(authResponse.user);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Registration failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
+  // Update profile function
+  const updateProfile = async (profileData: any) => {
+    try {
+      clearError();
+      const userData = await authService.updateProfile(profileData);
+      setUser(userData);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Profile update failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  // Logout function
   const logout = () => {
-    // Remove token
     authService.logout();
-    
-    // Clear user state
     setUser(null);
   };
 
@@ -93,16 +97,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const value = {
     user,
-    isAuthenticated,
     login,
     register,
     logout,
-    loading
+    updateProfile,
+    isAuthenticated,
+    loading,
+    error,
+    clearError
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+// Custom hook to use auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export default AuthContext;

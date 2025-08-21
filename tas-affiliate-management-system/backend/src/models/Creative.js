@@ -34,10 +34,33 @@ const Creative = sequelize.define('Creative', {
   metadata: {
     type: DataTypes.JSON,
     allowNull: true
+  },
+  isAIgenerated: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  generationPrompt: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  status: {
+    type: DataTypes.ENUM('draft', 'active', 'paused', 'archived'),
+    defaultValue: 'draft'
   }
 }, {
   timestamps: true,
-  tableName: 'creatives'
+  tableName: 'creatives',
+  indexes: [
+    {
+      fields: ['campaignId']
+    },
+    {
+      fields: ['type']
+    },
+    {
+      fields: ['isAIgenerated']
+    }
+  ]
 });
 
 module.exports = Creative;

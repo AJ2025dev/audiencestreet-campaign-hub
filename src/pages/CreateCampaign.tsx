@@ -1,10 +1,10 @@
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { 
+import {
   ArrowLeft,
   Save,
   Play,
@@ -32,9 +32,36 @@ import {
 import { useNavigate } from "react-router-dom"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 const CreateCampaign = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  // Campaign creation mutation
+  const createCampaignMutation = useMutation({
+    mutationFn: async (campaignData: any) => {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .insert(campaignData)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] })
+      toast.success('Campaign created successfully!')
+      navigate('/campaigns')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create campaign: ${error.message}`)
+    },
+  })
   const [campaignData, setCampaignData] = useState({
     name: "",
     objective: "",
@@ -86,29 +113,42 @@ const CreateCampaign = () => {
   const launchCampaign = () => {
     // Validate required fields
     if (!campaignData.name) {
-      alert('Please enter a campaign name')
+      toast.error('Please enter a campaign name')
       return
     }
     
     if (!campaignData.advertiserId) {
-      alert('Please select an advertiser')
+      toast.error('Please select an advertiser')
       return
     }
     
-    // Create campaign object
-    const campaignPayload = {
-      ...campaignData,
-      dsps: selectedDSPs,
-      ssps: selectedSSPs,
-      strategy: generatedStrategy,
-      createdAt: new Date().toISOString()
+    if (!user) {
+      toast.error('You must be logged in to create a campaign')
+      return
     }
     
-    console.log('Launching campaign:', campaignPayload)
-    alert('Campaign launched successfully! (This is a demo - in production this would connect to your DSP/SSP APIs)')
+    // Create campaign object for database
+    const campaignPayload = {
+      name: campaignData.name,
+      budget: parseFloat(campaignData.budget) || 0,
+      daily_budget: parseFloat(campaignData.dailyBudget) || null,
+      start_date: campaignData.startDate || new Date().toISOString(),
+      end_date: campaignData.endDate || null,
+      status: 'draft',
+      user_id: user.id,
+      targeting_config: {
+        age: campaignData.targeting.age,
+        gender: campaignData.targeting.gender,
+        locations: campaignData.targeting.locations,
+        interests: campaignData.targeting.interests,
+        behaviors: campaignData.targeting.behaviors
+      },
+      domain_lists: null, // Will be updated when domain lists are implemented
+      frequency_caps: null, // Will be updated when frequency capping is implemented
+    }
     
-    // Navigate back to advertiser campaigns page
-    navigate(`/advertisers/${campaignData.advertiserId}/campaigns`)
+    // Save campaign to database
+    createCampaignMutation.mutate(campaignPayload)
   }
 
   const generateCampaignStrategy = async () => {
@@ -340,18 +380,22 @@ const CreateCampaign = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="total-budget">Total Budget</Label>
-                  <Input 
+                  <Input
                     id="total-budget"
                     placeholder="$10,000"
                     type="number"
+                    value={campaignData.budget}
+                    onChange={(e) => setCampaignData(prev => ({ ...prev, budget: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="daily-budget">Daily Budget</Label>
-                  <Input 
+                  <Input
                     id="daily-budget"
                     placeholder="$100"
                     type="number"
+                    value={campaignData.dailyBudget}
+                    onChange={(e) => setCampaignData(prev => ({ ...prev, dailyBudget: e.target.value }))}
                   />
                 </div>
               </div>
@@ -359,16 +403,20 @@ const CreateCampaign = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start-date">Start Date</Label>
-                  <Input 
+                  <Input
                     id="start-date"
                     type="date"
+                    value={campaignData.startDate}
+                    onChange={(e) => setCampaignData(prev => ({ ...prev, startDate: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="end-date">End Date</Label>
-                  <Input 
+                  <Input
                     id="end-date"
                     type="date"
+                    value={campaignData.endDate}
+                    onChange={(e) => setCampaignData(prev => ({ ...prev, endDate: e.target.value }))}
                   />
                 </div>
               </div>
@@ -412,15 +460,52 @@ const CreateCampaign = () => {
                       <div className="space-y-2">
                         <Label>Age Range</Label>
                         <div className="flex items-center gap-2">
-                          <Input placeholder="18" type="number" />
+                          <Input
+                            placeholder="18"
+                            type="number"
+                            value={campaignData.targeting.age.min}
+                            onChange={(e) => setCampaignData(prev => ({
+                              ...prev,
+                              targeting: {
+                                ...prev.targeting,
+                                age: {
+                                  ...prev.targeting.age,
+                                  min: parseInt(e.target.value) || 18
+                                }
+                              }
+                            }))}
+                          />
                           <span className="text-muted-foreground">to</span>
-                          <Input placeholder="65" type="number" />
+                          <Input
+                            placeholder="65"
+                            type="number"
+                            value={campaignData.targeting.age.max}
+                            onChange={(e) => setCampaignData(prev => ({
+                              ...prev,
+                              targeting: {
+                                ...prev.targeting,
+                                age: {
+                                  ...prev.targeting.age,
+                                  max: parseInt(e.target.value) || 65
+                                }
+                              }
+                            }))}
+                          />
                         </div>
                       </div>
                       
                       <div className="space-y-2">
                         <Label>Gender</Label>
-                        <Select>
+                        <Select
+                          value={campaignData.targeting.gender}
+                          onValueChange={(value) => setCampaignData(prev => ({
+                            ...prev,
+                            targeting: {
+                              ...prev.targeting,
+                              gender: value
+                            }
+                          }))}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="All genders" />
                           </SelectTrigger>
@@ -434,7 +519,17 @@ const CreateCampaign = () => {
 
                       <div className="space-y-2">
                         <Label>Location</Label>
-                        <Input placeholder="United States" />
+                        <Input
+                          placeholder="United States"
+                          value={campaignData.targeting.locations[0] || ""}
+                          onChange={(e) => setCampaignData(prev => ({
+                            ...prev,
+                            targeting: {
+                              ...prev.targeting,
+                              locations: [e.target.value]
+                            }
+                          }))}
+                        />
                       </div>
                     </div>
                   </div>

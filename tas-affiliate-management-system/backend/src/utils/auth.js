@@ -8,7 +8,7 @@ const config = require('../config');
  * @returns {Promise<string>} - Hashed password
  */
 const hashPassword = async (password) => {
-  const saltRounds = 10;
+  const saltRounds = 12;
   return await bcrypt.hash(password, saltRounds);
 };
 
@@ -42,9 +42,49 @@ const verifyToken = (token) => {
   return jwt.verify(token, config.jwt.secret);
 };
 
+/**
+ * Generate a random password
+ * @param {number} length - Length of password
+ * @returns {string} - Random password
+ */
+const generateRandomPassword = (length = 12) => {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+};
+
+/**
+ * Validate password strength
+ * @param {string} password - Password to validate
+ * @returns {object} - Validation result
+ */
+const validatePassword = (password) => {
+  const minLength = 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumbers = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  
+  const isValid = password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar;
+  
+  return {
+    isValid,
+    minLength: password.length >= minLength,
+    hasUpperCase,
+    hasLowerCase,
+    hasNumbers,
+    hasSpecialChar
+  };
+};
+
 module.exports = {
   hashPassword,
   comparePassword,
   generateToken,
-  verifyToken
+  verifyToken,
+  generateRandomPassword,
+  validatePassword
 };
