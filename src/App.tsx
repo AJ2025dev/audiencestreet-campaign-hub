@@ -32,6 +32,8 @@ import MediaPlanning from "./pages/MediaPlanning";
 import BudgetControl from "./pages/BudgetControl";
 import TestDashboard from "./pages/TestDashboard";
 import NotFound from "./pages/NotFound";
+import EquativAudiences from "./pages/EquativAudiences";
+import EquativTracking from "./pages/EquativTracking";
 
 const queryClient = new QueryClient();
 
@@ -199,6 +201,20 @@ const App = () => (
               <ProtectedRoute requireRole="admin">
                 <Layout>
                   <TestDashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/equativ-audiences" element={
+              <ProtectedRoute>
+                <Layout>
+                  <EquativAudiences />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/equativ-tracking" element={
+              <ProtectedRoute>
+                <Layout>
+                  <EquativTracking />
                 </Layout>
               </ProtectedRoute>
             } />
