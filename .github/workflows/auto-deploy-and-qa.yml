@@ -77,7 +77,7 @@ jobs:
       - name: Trigger existing Agent Pipeline workflow
         run: |
           # Change this if your workflow has a different display name
-          wf_name="Agent Pipeline"
+          wf_name="Agent Pipeline (PM only)"
           echo "Triggering \"$wf_name\" on main ..."
           gh workflow run "$wf_name" --ref main
           echo "Waiting for the run to start..."
