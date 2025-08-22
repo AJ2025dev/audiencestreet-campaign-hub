@@ -103,7 +103,7 @@ jobs:
 
       - name: Smoke test Pricing API
         run: |
-          curl -fsSL "${API_BASE_URL}/api/campaigns/price?base=1000&agency_pct=15&admin_pct=5" || exit 1
+          curl -fsSL "${API_BASE_URL}/functions/v1/campaign-price?base=1000&agency_pct=15&admin_pct=5" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U" || exit 1
 
       - name: Smoke test Creative (text)
         run: |
