@@ -1,0 +1,27 @@
+name: Test Creative Text Generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      product:
+        description: 'Product name'
+        required: true
+        default: 'Sneaker X'
+      audience:
+        description: 'Target audience'
+        required: true
+        default: 'runners in Mumbai'
+
+jobs:
+  test_creative_text:
+    name: Test Creative Text Generation
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+    steps:
+      - name: Smoke test Creative (text)
+        run: |
+          curl -fsSL -X POST "${API_BASE_URL}/functions/v1/creatives-text" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            -d '{"product":"${{ inputs.product }}","audience":"${{ inputs.audience }}"}' || exit 1
