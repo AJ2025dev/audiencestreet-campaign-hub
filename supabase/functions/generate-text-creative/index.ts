@@ -12,15 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { product, audience } = await req.json();
+    const { product, audience, campaignObjective, toneOfVoice, targetAudience, keyMessage, callToAction } = await req.json();
     
-    // Validate parameters
-    if (!product || !audience) {
+    // Validate parameters - accept either product/audience or the more detailed parameters
+    const hasBasicParams = product && audience;
+    const hasDetailedParams = campaignObjective && toneOfVoice && targetAudience && keyMessage && callToAction;
+    
+    if (!hasBasicParams && !hasDetailedParams) {
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters: product and audience' }),
-        { 
+        JSON.stringify({ error: 'Missing required parameters: either provide product and audience, or provide campaignObjective, toneOfVoice, targetAudience, keyMessage, and callToAction' }),
+        {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
+          status: 400
         }
       )
     }
@@ -54,10 +57,21 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: `Create a compelling text creative for ${product} targeting ${audience}. Include:
-1. A catchy headline (max 60 characters)
-2. A persuasive description (max 90 characters)
-3. A clear call-to-action (max 30 characters)`
+            content: product && audience
+              ? `Create a compelling text creative for ${product} targeting ${audience}. Include:
+    1. A catchy headline (max 60 characters)
+    2. A persuasive description (max 90 characters)
+    3. A clear call-to-action (max 30 characters)`
+              : `Create a compelling text creative with the following details:
+    - Campaign Objective: ${campaignObjective}
+    - Tone of Voice: ${toneOfVoice}
+    - Target Audience: ${targetAudience}
+    - Key Message: ${keyMessage}
+    - Call to Action: ${callToAction}
+    Include:
+    1. A catchy headline (max 60 characters)
+    2. A persuasive description (max 90 characters)
+    3. A clear call-to-action (max 30 characters)`
           }
         ],
         max_tokens: 200,

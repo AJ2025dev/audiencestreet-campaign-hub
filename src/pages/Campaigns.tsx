@@ -13,6 +13,7 @@ import {
   Download,
   Edit,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -123,6 +124,51 @@ const Campaigns = () => {
     daily_budget: "",
     start_date: "",
     end_date: "",
+  });
+  
+  const autoCampaignMutation = useMutation({
+    mutationFn: async (campaign: CampaignRow) => {
+      // Generate AI strategy
+      const { data: strategyData, error: strategyError } = await supabase.functions.invoke('generate-campaign-strategy', {
+        body: {
+          brandDescription: `Campaign: ${campaign.name}`,
+          campaignObjective: "Optimize performance based on existing campaign data",
+          platformContext: {
+            budget: `Total: ${campaign.budget}, Daily: ${campaign.daily_budget || 'Not set'}`,
+            startDate: campaign.start_date,
+            endDate: campaign.end_date || 'Not set'
+          }
+        }
+      });
+      
+      if (strategyError) throw strategyError;
+      
+      // Create new auto campaign with AI strategy
+      const { data, error } = await supabase
+        .from('campaigns')
+        .insert({
+          name: `${campaign.name} (Auto)`,
+          budget: campaign.budget,
+          daily_budget: campaign.daily_budget,
+          start_date: campaign.start_date,
+          end_date: campaign.end_date,
+          status: 'draft',
+          user_id: user!.id,
+          description: `Auto-generated campaign based on "${campaign.name}" with AI strategy: ${strategyData.strategy.substring(0, 200)}...`
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["campaigns", user?.id] });
+      toast.success("Auto campaign created successfully!");
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create auto campaign: ${error.message}`);
+    },
   });
 
   const openEdit = (c: CampaignRow) => {
@@ -260,6 +306,15 @@ const Campaigns = () => {
                             aria-label={campaign.status === "active" ? "Pause" : "Resume"}
                           >
                             {campaign.status === "active" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => autoCampaignMutation.mutate(campaign)}
+                            disabled={autoCampaignMutation.isPending}
+                            aria-label="Create Auto Campaign"
+                          >
+                            <Sparkles className="h-4 w-4" />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

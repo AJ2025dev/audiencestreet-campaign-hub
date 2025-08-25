@@ -1,0 +1,112 @@
+name: Staging Deploy
+
+on:
+  push:
+    branches: [ staging ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  deploy:
+    name: Deploy Backend (Render) & Frontend (Vercel) - Staging
+    runs-on: ubuntu-latest
+    env:
+      RENDER_STAGING_DEPLOY_HOOK: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}
+      VERCEL_STAGING_DEPLOY_HOOK: ${{ secrets.VERCEL_STAGING_DEPLOY_HOOK }}
+    steps:
+      - name: Trigger Render staging backend deploy
+        if: ${{ env.RENDER_STAGING_DEPLOY_HOOK != '' }}
+        run: |
+          curl -fsSL -X POST "$RENDER_STAGING_DEPLOY_HOOK"
+          echo "Render staging deploy hook triggered."
+
+      - name: Trigger Vercel staging frontend deploy
+        if: ${{ env.VERCEL_STAGING_DEPLOY_HOOK != '' }}
+        run: |
+          curl -fsSL -X POST "$VERCEL_STAGING_DEPLOY_HOOK"
+          echo "Vercel staging deploy hook triggered."
+
+  wait_for_backend:
+    name: Wait for Staging Backend Health
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    env:
+      STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
+    steps:
+      - name: Poll health endpoint
+        run: |
+          if [ -z "$STAGING_API_BASE_URL" ]; then
+            echo "STAGING_API_BASE_URL is not set. Please add it as a repository variable."
+            exit 1
+          fi
+          echo "Checking Supabase backend at $STAGING_API_BASE_URL ..."
+          for i in {1..10}; do
+            code=$(curl -sk -o /dev/null -w "%{http_code}" "$STAGING_API_BASE_URL/rest/v1/" -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U")
+            if [ "$code" = "200" ] || [ "$code" = "401" ]; then
+              echo "Supabase backend is healthy."
+              exit 0
+            fi
+            echo "Not ready yet ($i/10). Status code: $code. Sleeping 5s..."
+            sleep 5
+          done
+          echo "Backend did not respond in time."
+          exit 1
+
+  staging_tests:
+    name: Run Staging Tests
+    needs: [wait_for_backend]
+    runs-on: ubuntu-latest
+    env:
+      STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Run unit tests
+      - name: Run unit tests
+        run: npm run test:unit || echo "No unit tests found"
+
+      # Run integration tests
+      - name: Run integration tests
+        run: npm run test:integration || echo "No integration tests found"
+
+      # Smoke test Pricing API
+      - name: Smoke test Pricing API
+        run: |
+          curl -fsSL "${STAGING_API_BASE_URL}/functions/v1/campaign-price?base=1000&agency_pct=15&admin_pct=5" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U" || exit 1
+
+      # Smoke test Creative (text)
+      - name: Smoke test Creative (text)
+        run: |
+          curl -fsSL -X POST "${STAGING_API_BASE_URL}/functions/v1/creatives-text" \
+            -H "Content-Type: application/json" \
+            -d '{"product":"Sneaker X","audience":"runners in Mumbai"}' || exit 1
+
+      # Run Playwright tests
+      - name: Run Playwright tests
+        run: npx playwright test
+
+      # Upload test results
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30

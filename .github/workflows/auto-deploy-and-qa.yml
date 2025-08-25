@@ -107,7 +107,6 @@ jobs:
 
       - name: Smoke test Creative (text)
         run: |
-          curl -fsSL -X POST "${API_BASE_URL}/functions/v1/generate-text-creative" \
+          curl -fsSL -X POST "${API_BASE_URL}/functions/v1/creatives-text" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U" \
             -d '{"product":"Sneaker X","audience":"runners in Mumbai"}' || exit 1

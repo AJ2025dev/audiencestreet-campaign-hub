@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,16 +8,35 @@ import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/components/ui/use-toast'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  DollarSign, 
-  TrendingUp, 
+import {
+  DollarSign,
+  TrendingUp,
   AlertTriangle,
   Clock,
   Pause,
   Play,
   Settings,
-  Shield
+  Shield,
+  Edit3,
+  Save,
+  X
 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface CampaignBudget {
   id: string
@@ -48,6 +67,43 @@ export default function BudgetControl() {
   const { user } = useAuth()
   const { toast } = useToast()
   const queryClient = useQueryClient()
+
+  // State for budget editing dialog
+  const [editingCampaign, setEditingCampaign] = useState<CampaignBudget | null>(null)
+  const [editForm, setEditForm] = useState({
+    budget: "",
+    daily_budget: "",
+    pacing_strategy: ""
+  })
+
+  // Mutation for updating campaign budgets
+  const updateBudgetMutation = useMutation({
+    mutationFn: async (budgetData: { campaignId: string; budget: number; dailyBudget: number | null }) => {
+      const { error } = await supabase.rpc('update_campaign_budget', {
+        p_campaign_id: budgetData.campaignId,
+        p_budget: budgetData.budget,
+        p_daily_budget: budgetData.dailyBudget,
+        p_start_date: null, // Keep existing start date
+        p_end_date: null // Keep existing end date
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaign-budgets"] })
+      toast({
+        title: "Budget updated",
+        description: "Campaign budget has been successfully updated",
+      })
+      setEditingCampaign(null)
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update failed",
+        description: `Failed to update budget: ${error.message}`,
+        variant: "destructive"
+      })
+    },
+  })
 
   // Fetch campaign budget data with real-time spend tracking
   const { data: campaignBudgets, isLoading } = useQuery({
@@ -430,7 +486,18 @@ export default function BudgetControl() {
                                 <Pause className="h-4 w-4" />
                               </Button>
                             )}
-                            <Button size="sm" variant="outline">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingCampaign(campaign)
+                                setEditForm({
+                                  budget: campaign.budget.toString(),
+                                  daily_budget: campaign.daily_budget?.toString() || "",
+                                  pacing_strategy: campaign.pacing_status
+                                })
+                              }}
+                            >
                               <Settings className="h-4 w-4" />
                             </Button>
                           </div>
@@ -449,6 +516,85 @@ export default function BudgetControl() {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Budget Editing Dialog */}
+        <Dialog open={!!editingCampaign} onOpenChange={(open) => !open && setEditingCampaign(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit3 className="h-5 w-5" />
+                Edit Budget for {editingCampaign?.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="budget" className="text-right">
+                  Total Budget
+                </Label>
+                <Input
+                  id="budget"
+                  type="number"
+                  value={editForm.budget}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, budget: e.target.value }))}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="daily_budget" className="text-right">
+                  Daily Budget
+                </Label>
+                <Input
+                  id="daily_budget"
+                  type="number"
+                  value={editForm.daily_budget}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, daily_budget: e.target.value }))}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="pacing" className="text-right">
+                  Pacing Strategy
+                </Label>
+                <Select
+                  value={editForm.pacing_strategy}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, pacing_strategy: value }))}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select pacing strategy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="on_track">On Track</SelectItem>
+                    <SelectItem value="under_pacing">Under Pacing</SelectItem>
+                    <SelectItem value="over_pacing">Over Pacing</SelectItem>
+                    <SelectItem value="at_risk">At Risk</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditingCampaign(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (editingCampaign) {
+                    updateBudgetMutation.mutate({
+                      campaignId: editingCampaign.id,
+                      budget: parseFloat(editForm.budget) || editingCampaign.budget,
+                      dailyBudget: editForm.daily_budget ? parseFloat(editForm.daily_budget) : null
+                    })
+                  }
+                }}
+                disabled={updateBudgetMutation.isPending}
+              >
+                {updateBudgetMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
