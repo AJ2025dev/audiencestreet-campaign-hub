@@ -34,6 +34,8 @@ import TestDashboard from "./pages/TestDashboard";
 import NotFound from "./pages/NotFound";
 import EquativAudiences from "./pages/EquativAudiences";
 import EquativTracking from "./pages/EquativTracking";
+import AgencyCommissions from "./pages/AgencyCommissions";
+import EquativInventory from "./pages/EquativInventory";
 
 const queryClient = new QueryClient();
 
@@ -215,6 +217,20 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <EquativTracking />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/agency-commissions" element={
+              <ProtectedRoute requireRole="agency">
+                <Layout>
+                  <AgencyCommissions />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/equativ-inventory" element={
+              <ProtectedRoute>
+                <Layout>
+                  <EquativInventory />
                 </Layout>
               </ProtectedRoute>
             } />

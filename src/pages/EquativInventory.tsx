@@ -64,6 +64,36 @@ export default function EquativInventory() {
     loadInventory();
   }, []);
 
+  const pullInventory = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('equativ-inventory-analysis', {
+        body: {
+          action: 'pull_inventory',
+          filters: {}
+        }
+      });
+
+      if (error) throw error;
+      
+      // After pulling, refresh the inventory list
+      await loadInventory();
+      
+      toast({
+        title: "Inventory Pull Successful",
+        description: "Inventory data has been successfully pulled from Equativ.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error pulling inventory",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadInventory = async () => {
     setLoading(true);
     try {
@@ -159,10 +189,15 @@ export default function EquativInventory() {
           <h1 className="text-3xl font-bold tracking-tight">Equativ Inventory</h1>
           <p className="text-muted-foreground">Analyze and forecast programmatic inventory</p>
         </div>
-        <Button onClick={loadInventory} disabled={loading}>
-          <Search className="mr-2 h-4 w-4" />
-          {loading ? "Searching..." : "Search Inventory"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={pullInventory} disabled={loading}>
+            {loading ? "Pulling..." : "Pull Inventory"}
+          </Button>
+          <Button onClick={loadInventory} disabled={loading}>
+            <Search className="mr-2 h-4 w-4" />
+            {loading ? "Searching..." : "Search Inventory"}
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="inventory" className="space-y-4">

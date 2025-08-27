@@ -116,6 +116,21 @@ Deno.serve(async (req) => {
         result = await response.json();
         break;
 
+      case 'pull_inventory':
+        console.log('Pulling inventory data from Equativ');
+        // This action specifically pulls inventory data from Equativ
+        // Using the existing inventory endpoint but with specific parameters for pulling
+        const pullParams = new URLSearchParams();
+        pullParams.append('pullType', 'full');
+        pullParams.append('timestamp', new Date().toISOString());
+        
+        response = await fetch(`${baseUrl}/inventory?${pullParams.toString()}`, {
+          method: 'GET',
+          headers
+        });
+        result = await response.json();
+        break;
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }

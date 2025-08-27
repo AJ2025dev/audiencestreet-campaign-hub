@@ -202,6 +202,50 @@ const CreateCampaign = () => {
     }
   }
 
+  const autoCreateCampaignFromStrategy = async () => {
+    if (!generatedStrategy) {
+      alert("Please generate a campaign strategy first")
+      return
+    }
+
+    try {
+      // Parse the strategy to extract key information
+      // This is a simplified implementation - in a real app, you'd use more sophisticated parsing
+      const strategyLines = generatedStrategy.split('\n').filter(line => line.trim() !== '');
+      
+      // Extract campaign name from the first non-empty line
+      const campaignName = strategyLines[0]?.replace(/^#+\s*/, '') || `AI Campaign ${new Date().toISOString().split('T')[0]}`;
+      
+      // Extract objective from lines containing "objective" or "goal"
+      const objectiveLine = strategyLines.find(line =>
+        line.toLowerCase().includes('objective') || line.toLowerCase().includes('goal')
+      );
+      
+      let objective = "awareness";
+      if (objectiveLine) {
+        if (objectiveLine.toLowerCase().includes('conversion') || objectiveLine.toLowerCase().includes('purchase')) {
+          objective = "conversions";
+        } else if (objectiveLine.toLowerCase().includes('traffic')) {
+          objective = "traffic";
+        } else if (objectiveLine.toLowerCase().includes('awareness')) {
+          objective = "awareness";
+        }
+      }
+
+      // Update campaign data with AI-generated values
+      setCampaignData(prev => ({
+        ...prev,
+        name: campaignName,
+        objective: objective
+      }));
+
+      toast.success('Campaign fields auto-populated from AI strategy!');
+    } catch (error) {
+      console.error('Error auto-creating campaign:', error);
+      alert(`Failed to auto-create campaign: ${error.message}`);
+    }
+  }
+
   // Helper functions to collect current form state
   const getSelectedEnvironments = () => {
     // This would collect from form state - for now return default environments
@@ -348,7 +392,7 @@ const CreateCampaign = () => {
                   />
                 </div>
 
-                <Button 
+                <Button
                   onClick={generateCampaignStrategy}
                   disabled={isGenerating || !aiPromptData.brandDescription || !aiPromptData.campaignObjective}
                   className="w-full"
@@ -357,11 +401,20 @@ const CreateCampaign = () => {
                 </Button>
 
                 {generatedStrategy && (
-                  <div className="space-y-2">
-                    <Label>Generated Campaign Strategy</Label>
-                    <div className="p-4 border rounded-lg bg-muted/50">
-                      <pre className="whitespace-pre-wrap text-sm">{generatedStrategy}</pre>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Generated Campaign Strategy</Label>
+                      <div className="p-4 border rounded-lg bg-muted/50">
+                        <pre className="whitespace-pre-wrap text-sm">{generatedStrategy}</pre>
+                      </div>
                     </div>
+                    
+                    <Button
+                      onClick={autoCreateCampaignFromStrategy}
+                      className="w-full"
+                    >
+                      Auto-Create Campaign from Strategy
+                    </Button>
                   </div>
                 )}
               </div>
