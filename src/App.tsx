@@ -218,6 +218,11 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
+            <Route path="/test" element={
+              <Layout>
+                <div>Test Page</div>
+              </Layout>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
