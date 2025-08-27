@@ -29,6 +29,12 @@ jwt_expiry = 3600
 
 [auth.email]
 
+[functions.campaign-price]
+verify_jwt = false
+
+[functions.creatives-text]
+verify_jwt = false
+
 [functions.generate-campaign-strategy]
 verify_jwt = true
 
