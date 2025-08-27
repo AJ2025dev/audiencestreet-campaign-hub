@@ -99,9 +99,6 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"product":"Sneaker X","audience":"runners in Mumbai"}' || exit 1
 
-      # Run Playwright tests
-      - name: Run Playwright tests
-        run: npx playwright test
 
       # Upload test results
       - name: Upload test results

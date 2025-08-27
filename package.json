@@ -10,8 +10,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "jest",
+    "test:unit": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:integration": "playwright test",
     "test:e2e": "playwright test",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
