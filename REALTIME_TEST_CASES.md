@@ -1,7 +1,7 @@
 # Real-Time User Test Cases for DSP Platform
 
 ## Test Environment Setup
-- **URL**: https://659000ac-be11-4322-aab0-8a31f355427d.lovableproject.com
+- **URL**: http://localhost:3000
 - **Current Route**: `/auth`
 - **Test Date**: 2025-08-08
 - **Status**: Active testing of GitHub changes integration
