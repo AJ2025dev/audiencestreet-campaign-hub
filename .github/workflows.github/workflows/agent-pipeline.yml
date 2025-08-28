@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: product-manager
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install Dependencies
@@ -20,7 +20,7 @@ jobs:
       - name: Run Product Manager Agent
         run: python agenthub/run.py --agent product_manager
       - name: Upload PRD and Backlog
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: product-manager-artifacts
           path: |
@@ -33,8 +33,8 @@ jobs:
     needs: product_manager
     environment: research
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install Dependencies
@@ -42,7 +42,7 @@ jobs:
       - name: Run Research Agent
         run: python agenthub/run.py --agent research
       - name: Upload Fact Pack
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: research-artifacts
           path: agenthub/outputs/fact_pack.md
@@ -53,8 +53,8 @@ jobs:
     needs: research
     environment: architect
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install Dependencies
@@ -62,7 +62,7 @@ jobs:
       - name: Run Architect Agent
         run: python agenthub/run.py --agent architect
       - name: Upload Architecture Proposal
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: architect-artifacts
           path: agenthub/outputs/architecture.md
@@ -73,8 +73,8 @@ jobs:
     needs: architect
     environment: engineer
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install Dependencies
@@ -82,7 +82,7 @@ jobs:
       - name: Run Engineer Agent
         run: python agenthub/run.py --agent engineer
       - name: Upload Code Plan
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: engineer-artifacts
           path: agenthub/outputs/code_plan.md
@@ -93,8 +93,8 @@ jobs:
     needs: engineer
     environment: qa
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install Dependencies
@@ -102,7 +102,7 @@ jobs:
       - name: Run QA Agent
         run: python agenthub/run.py --agent qa
       - name: Upload Test Plan
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qa-artifacts
           path: agenthub/outputs/test_plan.md
@@ -113,8 +113,8 @@ jobs:
     needs: qa
     environment: docs
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install Dependencies
@@ -122,7 +122,7 @@ jobs:
       - name: Run Docs Agent
         run: python agenthub/run.py --agent docs
       - name: Upload Documentation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docs-artifacts
           path: |
@@ -136,8 +136,8 @@ jobs:
     needs: docs
     environment: growth
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install Dependencies
@@ -145,7 +145,7 @@ jobs:
       - name: Run Growth Agent
         run: python agenthub/run.py --agent growth
       - name: Upload Growth Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: growth-artifacts
           path: |
