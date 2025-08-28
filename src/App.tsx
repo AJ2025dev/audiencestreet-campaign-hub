@@ -34,6 +34,7 @@ import TestDashboard from "./pages/TestDashboard";
 import NotFound from "./pages/NotFound";
 import EquativAudiences from "./pages/EquativAudiences";
 import EquativTracking from "./pages/EquativTracking";
+import TestPage from "./pages/TestPage";
 
 const queryClient = new QueryClient();
 
@@ -220,7 +221,7 @@ const App = () => (
             } />
             <Route path="/test" element={
               <Layout>
-                <div>Test Page</div>
+                <TestPage />
               </Layout>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
