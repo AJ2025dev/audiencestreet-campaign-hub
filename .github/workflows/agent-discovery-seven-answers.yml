@@ -1,0 +1,100 @@
+name: Agent Discovery (Seven Answers)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.x' }
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml tomli
+      - name: Run discovery (inline)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python - << 'PY'
+          import os, json, traceback
+          from pathlib import Path
+          import requests
+          try:
+            import tomllib
+          except Exception:
+            import tomli as tomllib
+
+          API = os.environ.get("GITHUB_API_URL","https://api.github.com")
+          REPO = os.environ.get("GITHUB_REPOSITORY")
+          TOKEN = os.environ.get("GITHUB_TOKEN")
+
+          S = requests.Session()
+          if TOKEN: S.headers["Authorization"] = f"Bearer {TOKEN}"
+          S.headers.update({"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"})
+
+          def gget(p):
+            r=S.get(f"{API}{p}",timeout=20)
+            try: return r.status_code, r.json()
+            except Exception: return r.status_code, {"raw": r.text}
+
+          def write_report(txt):
+            Path("agent_discovery_report.md").write_text(txt, encoding="utf-8")
+
+          try:
+            # Minimal scan so it can't crash on missing files
+            langs=set(); frameworks=set(); tools=set(); runtime=set()
+            try:
+              pkg = json.loads(Path("package.json").read_text(encoding="utf-8"))
+              d = {**pkg.get("dependencies",{}), **pkg.get("devDependencies",{})}
+              if d:
+                langs.add("JavaScript/TypeScript")
+                if "react" in d: frameworks.add("React")
+                if "next" in d: frameworks.add("Next.js")
+                if "@supabase/supabase-js" in d: tools.add("Supabase")
+                if "openai" in d or "anthropic" in d: tools.add("Cloud LLMs")
+            except Exception: pass
+
+            if any(Path(p).exists() for p in ["requirements.txt","pyproject.toml"]):
+              langs.add("Python")
+
+            if Path("Dockerfile").exists(): runtime.add("Containers")
+            if Path(".github/workflows").exists(): tools.add("GitHub Actions")
+
+            lines=[]
+            lines.append("# Agent Bootstrap: Seven Answers\n")
+            lines.append("## 1) What are you building?\n**Answer:** " + (", ".join(["Web app (React)"]) if "React" in frameworks else "Unknown") + "\n")
+            lines.append("## 2) Preferred stack\n**Answer:** Languages=" + (", ".join(sorted(langs)) or "Unknown") + "; Frameworks=" + (", ".join(sorted(frameworks)) or "Unknown") + "\n")
+            lines.append("## 3) Tools to integrate\n**Answer:** " + (", ".join(sorted(tools)) or "Unknown") + "\n")
+            lines.append("## 4) Model/provider prefs\n**Answer:** Infer from deps; confirm budget/latency.\n")
+            lines.append("## 5) Data/privacy constraints\n**Answer:** Check SECURITY/COMPLIANCE docs; confirm PII/PHI.\n")
+            lines.append("## 6) Where agents run\n**Answer:** " + (", ".join(sorted(runtime)) or "Unknown") + "\n")
+            lines.append("## 7) Approval gates\n**Answer:** Codeowners/branch protections; confirm human-in-the-loop.\n")
+            report="\n".join(lines)
+            write_report(report)
+
+            # Try to open an Issue; do not fail job if blocked
+            ok=True
+            try:
+              r=S.post(f"{API}/repos/{REPO}/issues", json={"title":"Agent Bootstrap: Seven Answers","body":report}, timeout=20)
+              if r.status_code>=300:
+                print(f"Note: couldn't create Issue ({r.status_code}): {r.text[:200]}")
+            except Exception as e:
+              print(f"Note: Issue creation skipped: {e}")
+          except Exception:
+            write_report("# Agent Discovery Failed\n\n```\n"+traceback.format_exc()+"\n```")
+          PY
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-discovery-report
+          path: agent_discovery_report.md
+          if-no-files-found: error

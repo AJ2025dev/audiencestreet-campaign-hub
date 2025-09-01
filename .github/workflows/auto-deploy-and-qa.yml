@@ -1,0 +1,113 @@
+name: Auto Deploy & QA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  deploy:
+    name: Deploy Backend (Render) & Frontend (Vercel)
+    runs-on: ubuntu-latest
+    env:
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+    steps:
+      - name: Trigger Render backend deploy
+        if: ${{ env.RENDER_DEPLOY_HOOK != '' }}
+        run: |
+          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK"
+          echo "Render deploy hook triggered."
+
+      - name: Trigger Vercel frontend deploy
+        if: ${{ env.VERCEL_DEPLOY_HOOK != '' }}
+        run: |
+          curl -fsSL -X POST "$VERCEL_DEPLOY_HOOK"
+          echo "Vercel deploy hook triggered."
+
+  wait_for_backend:
+    name: Wait for Backend Health
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+    steps:
+      - name: Poll health endpoint
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "API_BASE_URL is not set. Please add it as a repository variable."
+            exit 1
+          fi
+          echo "Checking Supabase backend at $API_BASE_URL ..."
+          for i in {1..10}; do
+            code=$(curl -sk -o /dev/null -w "%{http_code}" "$API_BASE_URL/rest/v1/" -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U")
+            if [ "$code" = "200" ] || [ "$code" = "401" ]; then
+              echo "Supabase backend is healthy."
+              exit 0
+            fi
+            echo "Not ready yet ($i/10). Status code: $code. Sleeping 5s..."
+            sleep 5
+          done
+          echo "Backend did not respond in time."
+          exit 1
+
+  qa_agents:
+    name: Run Agent Pipeline (includes QA)
+    needs: [wait_for_backend]
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      EQUATIV_API_KEY: ${{ secrets.EQUATIV_API_KEY }}
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+      MINIMAX_GROUP_ID: ${{ secrets.MINIMAX_GROUP_ID }}
+      DEFAULT_AGENCY_MARGIN_PCT: ${{ secrets.DEFAULT_AGENCY_MARGIN_PCT }}
+      DEFAULT_ADMIN_BUFFER_PCT: ${{ secrets.DEFAULT_ADMIN_BUFFER_PCT }}
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      GH_TOKEN: ${{ github.token }}   # token for gh CLI
+    steps:
+      # Add this checkout step to fix the git repository issue
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # GitHub-hosted runners already include gh; no install needed
+      - name: Trigger existing Agent Pipeline workflow
+        run: |
+          # Change this if your workflow has a different display name
+          wf_name="Agent Pipeline (PM only)"
+          echo "Triggering \"$wf_name\" on main ..."
+          # Run the workflow and capture the output
+          output=$(gh workflow run "$wf_name" --ref main 2>&1)
+          echo "$output"
+          
+          # Try to extract run ID from the output
+          # The output might contain a URL like: https://github.com/owner/repo/actions/runs/123456789
+          if echo "$output" | grep -q "https://github.com/"; then
+            run_id=$(echo "$output" | grep -oE "https://github.com/[^/]+/[^/]+/actions/runs/[0-9]+" | grep -oE "[0-9]+$")
+            if [ -n "$run_id" ]; then
+              echo "Workflow run started with ID: $run_id"
+              echo "Waiting for the run to start..."
+              sleep 10
+              gh run watch "$run_id" --exit-status
+            else
+              echo "Could not extract run ID from output"
+              exit 1
+            fi
+          else
+            echo "Workflow triggered, but could not get run ID. Waiting 60 seconds for it to complete..."
+            sleep 60
+          fi
+
+      - name: Smoke test Pricing API
+        run: |
+          curl -fsSL "${API_BASE_URL}/functions/v1/campaign-price?base=1000&agency_pct=15&admin_pct=5" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U" || exit 1
+
+      - name: Smoke test Creative (text)
+        run: |
+          curl -fsSL -X POST "${API_BASE_URL}/functions/v1/generate-text-creative" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U" \
+            -d '{"product":"Sneaker X","audience":"runners in Mumbai"}' || exit 1

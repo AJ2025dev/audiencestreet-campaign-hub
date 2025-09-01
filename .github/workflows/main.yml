@@ -1,0 +1,356 @@
+name: Agent Discovery (Seven Answers)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install script deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml tomli
+
+      - name: Run discovery (inline)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python - << 'PY'
+          # Agent Discovery Script: infers answers to seven setup questions from this repo.
+          import os, re, json, traceback
+          from pathlib import Path
+          from typing import Dict, List, Tuple, Any
+
+          import requests, yaml
+          try:
+              import tomllib  # Py3.11+
+          except Exception:
+              import tomli as tomllib  # type: ignore
+
+          GITHUB_API = os.environ.get("GITHUB_API_URL", "https://api.github.com")
+          REPO_FULL = os.environ.get("GITHUB_REPOSITORY")
+          TOKEN = os.environ.get("GITHUB_TOKEN")
+
+          S = requests.Session()
+          if TOKEN:
+              S.headers["Authorization"] = f"Bearer {TOKEN}"
+          S.headers.update({
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "agent-discovery-script"
+          })
+
+          IGNORE = {".git",".svn",".hg",".venv","venv","env",".env","node_modules","dist","build",".next",".turbo",".cache","coverage","target","vendor","__pycache__","Pods","ios/Pods","android/app/build",".idea",".vscode"}
+
+          def gget(path: str):
+              r = S.get(f"{GITHUB_API}{path}", timeout=20)
+              try: return r.status_code, r.json()
+              except Exception: return r.status_code, {"raw": r.text}
+
+          def get_repo_info():
+              if not REPO_FULL: return {}
+              code, data = gget(f"/repos/{REPO_FULL}")
+              if code != 200: return {}
+              code2, topics = gget(f"/repos/{REPO_FULL}/topics")
+              if code2 == 200 and isinstance(topics, dict):
+                  data["topics"] = topics.get("names", [])
+              return data
+
+          def find_files(patterns: List[str]):
+              out = []
+              for p in patterns:
+                  for m in Path(".").glob(p):
+                      if any(part in IGNORE for part in m.parts): continue
+                      if m.is_file(): out.append(m)
+              return out
+
+          def read_text(p: Path, limit=200_000):
+              try:
+                  if p.stat().st_size > limit: return ""
+                  return p.read_text(encoding="utf-8", errors="ignore")
+              except Exception: return ""
+
+          def scan():
+              sig = {"package_json":{}, "requirements":[], "pyproject":{}, "dockerfiles":[], "compose":[], "k8s":[], "serverless":[], "vercel":[], "netlify":[], "procfile":[], "fly_toml":[], "render_yaml":[], "codeowners":[], "pr_templates":[], "workflows":[], "security_docs":[], "compliance_docs":[], "readmes":[], "topics":[], "default_branch": None}
+              info = get_repo_info()
+              sig["topics"] = info.get("topics", [])
+              sig["default_branch"] = info.get("default_branch")
+
+              pj = find_files(["package.json"])
+              if pj:
+                  try:
+                      content = json.loads(read_text(pj[0]) or "{}")
+                      sig["package_json"] = {
+                          "dependencies": content.get("dependencies", {}),
+                          "devDependencies": content.get("devDependencies", {}),
+                          "scripts": content.get("scripts", {}),
+                          "engines": content.get("engines", {}),
+                          "type": content.get("type")
+                      }
+                  except Exception: pass
+
+              req = find_files(["requirements.txt"])
+              if req:
+                  reqs = []
+                  for line in read_text(req[0]).splitlines():
+                      line = line.strip()
+                      if not line or line.startswith("#"): continue
+                      pkg = re.split(r"[<=>@ ]+", line)[0].strip()
+                      if pkg: reqs.append(pkg.lower())
+                  sig["requirements"] = sorted(set(reqs))
+
+              pp = find_files(["pyproject.toml"])
+              if pp:
+                  try:
+                      data = tomllib.loads(read_text(pp[0]) or "")
+                      deps = []
+                      prod = data.get("project", {}).get("dependencies", [])
+                      deps.extend([re.split(r"[<=>@ ]+", d)[0].lower() for d in prod])
+                      tool = data.get("tool", {})
+                      poetry_deps = tool.get("poetry", {}).get("dependencies", {})
+                      for k in poetry_deps.keys():
+                          if k.lower() != "python": deps.append(k.lower())
+                      sig["pyproject"] = {"dependencies": sorted(set(deps))}
+                  except Exception: pass
+
+              def _t(globs): 
+                  fs = find_files(globs); 
+                  return read_text(fs[0]) if fs else ""
+              sig["go_mod"] = _t(["go.mod"])
+              sig["cargo_toml"] = _t(["Cargo.toml"])
+              sig["pom_xml"] = _t(["pom.xml"])
+              sig["gemfile"] = _t(["Gemfile"])
+              try:
+                  cj = find_files(["composer.json"])
+                  sig["composer_json"] = json.loads(read_text(cj[0]) or "{}") if cj else {}
+              except Exception: pass
+
+              sig["dockerfiles"] = [str(p) for p in find_files(["Dockerfile", "**/Dockerfile"])]
+              sig["compose"] = [str(p) for p in find_files(["docker-compose.y*ml"])]
+              sig["k8s"] = [str(p) for p in find_files(["k8s/**/*.y*ml","helm/**/values*.y*ml","**/deployment.y*ml"])]
+              sig["serverless"] = [str(p) for p in find_files(["serverless.y*ml"])]
+              sig["vercel"] = [str(p) for p in find_files(["vercel.json"])]
+              sig["netlify"] = [str(p) for p in find_files(["netlify.toml"])]
+              sig["procfile"] = [str(p) for p in find_files(["Procfile"])]
+              sig["fly_toml"] = [str(p) for p in find_files(["fly.toml"])]
+              sig["render_yaml"] = [str(p) for p in find_files(["render.y*ml"])]
+
+              sig["codeowners"] = [str(p) for p in find_files(["CODEOWNERS",".github/CODEOWNERS","docs/CODEOWNERS"])]
+              sig["pr_templates"] = [str(p) for p in find_files(["PULL_REQUEST_TEMPLATE.md",".github/pull_request_template.md",".github/PULL_REQUEST_TEMPLATE/*.md"])]
+              wfs = find_files([".github/workflows/*.y*ml"])
+              sig["workflows"] = [str(p) for p in wfs]
+              wf_summaries = []
+              for wf in wfs:
+                  try:
+                      data = yaml.safe_load(read_text(wf)) or {}
+                      name = data.get("name")
+                      on = list(data.get("on", {}).keys()) if isinstance(data.get("on"), dict) else data.get("on")
+                      jobs = list((data.get("jobs") or {}).keys())
+                      wf_summaries.append({"path": str(wf), "name": name, "on": on, "jobs": jobs})
+                  except Exception:
+                      wf_summaries.append({"path": str(wf), "name": None, "on": None, "jobs": []})
+              sig["workflow_summaries"] = wf_summaries
+              return sig
+
+          def detect_stack(sig):
+              js = {**sig.get("package_json", {}).get("dependencies", {}), **sig.get("package_json", {}).get("devDependencies", {})}
+              py = set(sig.get("requirements", [])) | set(sig.get("pyproject", {}).get("dependencies", []))
+              frameworks, langs, evidence = [], set(), []
+              if js:
+                  langs.add("JavaScript/TypeScript")
+                  for fw in ["next","react","vue","nuxt","svelte","angular","astro","remix"]:
+                      if fw in js: frameworks.append(fw); evidence.append(f"package.json: {fw}")
+                  for srv in ["express","fastify","koa","hapi","nestjs","@nestjs/core"]:
+                      if srv in js: frameworks.append(srv); evidence.append(f"package.json: {srv}")
+              if py:
+                  langs.add("Python")
+                  for fw in ["fastapi","flask","django","litestar","sanic","tornado","aiohttp"]:
+                      if fw in py: frameworks.append(fw); evidence.append(f"python deps: {fw}")
+              if sig.get("go_mod"): langs.add("Go"); evidence.append("go.mod present")
+              if sig.get("cargo_toml"): langs.add("Rust"); evidence.append("Cargo.toml present")
+              if sig.get("pom_xml"): langs.add("Java"); evidence.append("pom.xml present")
+              if sig.get("gemfile"): langs.add("Ruby"); evidence.append("Gemfile present")
+              if sig.get("composer_json"): langs.add("PHP"); evidence.append("composer.json present")
+              app_types = []
+              if any(x in js for x in ["next","react","vue","svelte"]): app_types.append("Web app")
+              if any(x in js for x in ["express","fastify","koa"]) or any(x in py for x in ["fastapi","flask","django"]): app_types.append("API / service")
+              mobile_dirs = ["android","ios","app/src","ios/Runner.xcodeproj","android/app/build.gradle"]
+              if any((Path(d).exists() for d in mobile_dirs)): app_types.append("Mobile app")
+              confidence = 0.6 if (frameworks or app_types or langs) else 0.2
+              return {"languages": sorted(langs) or ["Unknown"], "frameworks": sorted(set(frameworks)) or ["Unknown"], "app_types": sorted(set(app_types)) or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+          def detect_tools(sig):
+              js = {**sig.get("package_json", {}).get("dependencies", {}), **sig.get("package_json", {}).get("devDependencies", {})}
+              py = set(sig.get("requirements", [])) | set(sig.get("pyproject", {}).get("dependencies", []))
+              tools, evidence = [], []
+              def anyof(h, ks): return any(k in h for k in ks)
+              if anyof(js, ["@linear/sdk","linear-web"]) or "jira" in py or anyof(js, ["jira-client","@atlassian"]):
+                  tools.append("Linear/Jira"); evidence.append("Linear/Jira deps present")
+              if anyof(js, ["@slack/web-api","@slack/bolt"]) or "slack_sdk" in py:
+                  tools.append("Slack"); evidence.append("Slack dependency present")
+              if anyof(js, ["notion-client"]) or "notion-client" in py:
+                  tools.append("Notion"); evidence.append("Notion dependency present")
+              if anyof(js, ["@octokit/rest"]) or "PyGithub" in py:
+                  tools.append("GitHub API"); evidence.append("GitHub API client present")
+              if anyof(js, ["openai","anthropic","cohere","@google/generative-ai"]) or any(x in py for x in ["openai","anthropic","cohere","google-generativeai"]):
+                  tools.append("Cloud LLMs"); evidence.append("OpenAI/Anthropic/Cohere/Google deps present")
+              if anyof(js, ["llamaindex","langchain"]) or any(x in py for x in ["llama-index","langchain"]):
+                  tools.append("RAG tools"); evidence.append("LangChain/LlamaIndex present")
+              if anyof(js, ["@aws-sdk"]) or "boto3" in py:
+                  tools.append("AWS"); evidence.append("AWS SDK present")
+              if any(k.startswith("google-cloud-") for k in py) or anyof(js, ["@google-cloud"]):
+                  tools.append("Google Cloud"); evidence.append("GCP SDK present")
+              if anyof(js, ["@azure/"]) or any(x in py for x in ["azure","azure-core","azure-ai-textanalytics"]):
+                  tools.append("Azure"); evidence.append("Azure SDK present")
+              confidence = 0.5 if tools else 0.2
+              return {"tools": sorted(set(tools)) or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+          def detect_model(sig):
+              js = {**sig.get("package_json", {}).get("dependencies", {}), **sig.get("package_json", {}).get("devDependencies", {})}
+              py = set(sig.get("requirements", [])) | set(sig.get("pyproject", {}).get("dependencies", []))
+              providers, mode, evidence = [], [], []
+              for name in ["openai","anthropic","cohere","@google/generative-ai","mistral"]:
+                  if name in js or name in py: providers.append(name.replace("@google/generative-ai","google")); evidence.append(f"Found dependency: {name}")
+              for name in ["transformers","accelerate","vllm","ollama","ggml","ctransformers"]:
+                  if name in js or name in py: mode.append("local"); evidence.append(f"Local inference signal: {name}")
+              if providers and not mode: mode.append("cloud")
+              if not providers and not mode: mode.append("Unknown")
+              confidence = 0.5 if providers or mode != ["Unknown"] else 0.2
+              return {"providers": sorted(set(providers)) or ["Unknown"], "mode": sorted(set(mode)), "confidence": confidence, "evidence": evidence}
+
+          def detect_runtime(sig):
+              where, evidence = [], []
+              if sig["dockerfiles"] or sig["compose"]: where.append("Containers"); evidence.append("Dockerfile/docker-compose detected")
+              if sig["k8s"]: where.append("Kubernetes"); evidence.append("k8s manifests/Helm detected")
+              if sig["serverless"]: where.append("Serverless"); evidence.append("serverless.yml detected")
+              if sig["vercel"]: where.append("Vercel"); evidence.append("vercel.json detected")
+              if sig["netlify"]: where.append("Netlify"); evidence.append("netlify.toml detected")
+              if sig["procfile"]: where.append("Heroku"); evidence.append("Procfile detected")
+              if sig["fly_toml"]: where.append("Fly.io"); evidence.append("fly.toml detected")
+              if sig["render_yaml"]: where.append("Render"); evidence.append("render.yml detected")
+              confidence = 0.6 if where else 0.2
+              return {"run_targets": sorted(set(where)) or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+          def branch_protection(branch: str):
+              if not REPO_FULL: return {}
+              code, data = gget(f"/repos/{REPO_FULL}/branches/{branch}/protection")
+              if code != 200: return {"_note": f"Unable to fetch branch protection (status {code})."}
+              return data
+
+          def detect_gates(sig):
+              gates, evidence = [], []
+              if sig["codeowners"]:
+                  gates.append("CODEOWNERS enforced reviews (likely)")
+                  evidence.extend([f"Found {p}" for p in sig["codeowners"]])
+              if sig["pr_templates"]:
+                  gates.append("PR template present (policy hints)")
+                  evidence.extend([f"Found {p}" for p in sig["pr_templates"]])
+              default_branch = sig.get("default_branch") or "main"
+              prot = branch_protection(default_branch)
+              if isinstance(prot, dict) and "required_status_checks" in prot:
+                  gates.append("Protected default branch with required status checks")
+                  evidence.append("Branch protection fetched from API")
+              elif isinstance(prot, dict) and "_note" in prot:
+                  evidence.append(prot["_note"])
+              confidence = 0.5 if gates else 0.2
+              return {"gates": gates or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+          def detect_compliance(sig):
+              hints, evidence = [], []
+              for p in sig["security_docs"] + sig["compliance_docs"]:
+                  text = read_text(Path(p)).lower()
+                  if any(k in text for k in ["gdpr","hipaa","soc 2","soc2","iso 27001","pci"]):
+                      hints.append("Regulatory terms present (GDPR/HIPAA/SOC2/ISO27001/PCI)")
+                      evidence.append(f"{p}")
+              if sig["security_docs"]:
+                  hints.append("SECURITY.md present"); evidence.extend(sig["security_docs"])
+              for p in sig["readmes"]:
+                  text = read_text(Path(p)).lower()
+                  if any(k in text for k in ["pii","phi","privacy"]):
+                      hints.append("Mentions PII/PHI/Privacy in README"); evidence.append(p)
+              confidence = 0.4 if hints else 0.2
+              return {"posture": sorted(set(hints)) or ["Unknown"], "confidence": confidence, "evidence": evidence}
+
+          def render(answers: Dict[str, Any]) -> str:
+              lines = ["# Agent Bootstrap: Seven Answers", ""]
+              for i in range(1,8):
+                  b = answers.get(f"q{i}", {})
+                  lines += [f"## {i}) {b.get('title','')}",
+                            f"**Answer:** {b.get('answer','Unknown')}",
+                            f"**Confidence:** {b.get('confidence',0):.2f}"]
+                  if b.get("details"): lines += [f"**Details:**\n{b['details']}"]
+                  if b.get("evidence"):
+                      lines.append("<details><summary>Evidence</summary>\n")
+                      for e in b["evidence"]: lines.append(f"- {e}")
+                      lines.append("\n</details>")
+                  if b.get("open_questions"):
+                      lines.append("**Open questions for you:**")
+                      for q in b["open_questions"]: lines.append(f"- {q}")
+                  lines.append("")
+              lines += ["---","_Generated inline by `agent-discovery.yml`._"]
+              return "\n".join(lines)
+
+          def issue(title: str, body: str):
+              if not (REPO_FULL and TOKEN): 
+                  print("Missing repo or token; skip Issue creation."); return
+              code, issues = gget(f"/repos/{REPO_FULL}/issues?state=open&per_page=100")
+              iid = None
+              if code == 200 and isinstance(issues, list):
+                  for it in issues:
+                      if it.get("title")==title: iid = it.get("number"); break
+              if iid:
+                  r = S.patch(f"{GITHUB_API}/repos/{REPO_FULL}/issues/{iid}", json={"body": body}, timeout=20)
+                  print(f"Updated issue #{iid}: HTTP {r.status_code}")
+              else:
+                  r = S.post(f"{GITHUB_API}/repos/{REPO_FULL}/issues", json={"title": title, "body": body}, timeout=20)
+                  print(f"Created issue: HTTP {r.status_code}")
+
+          try:
+              sig = scan()
+              stack = detect_stack(sig)
+              tools = detect_tools(sig)
+              model = detect_model(sig)
+              runtime = detect_runtime(sig)
+              gates = detect_gates(sig)
+              compliance = detect_compliance(sig)
+
+              answers = {
+                  "q1": {"title":"What are you building (SaaS, data platform, mobile app, API, internal tooling)?","answer":", ".join(stack.get("app_types", ["Unknown"])),"confidence":stack["confidence"],"details":f"Languages: {', '.join(stack.get('languages', []))}; Frameworks: {', '.join(stack.get('frameworks', []))}","evidence":stack.get("evidence", []),"open_questions":["Confirm the primary product type and key user segments."]},
+                  "q2": {"title":"Preferred stack (Python or JS/TS)? Any frameworks to use/avoid?","answer":f"Stack signals: Languages={', '.join(stack.get('languages', []))}; Frameworks={', '.join(stack.get('frameworks', []))}","confidence":stack["confidence"],"details":"Derived from dependency manifests.","evidence":stack.get("evidence", []),"open_questions":["List frameworks to avoid (if any)."]},
+                  "q3": {"title":"Tools to integrate (GitHub, Jira/Linear, Slack, Notion, CI/CD)?","answer":", ".join(tools.get("tools", ["Unknown"])),"confidence":tools["confidence"],"details":"Based on detected client libraries and workflow files.","evidence":tools.get("evidence", []) + [f"Workflows: {len(sig.get('workflows', []))} found"],"open_questions":["Confirm your ticketing/PM system and comms channels."]},
+                  "q4": {"title":"Model/provider preferences (local vs cloud; cost/latency constraints)?","answer":f"Providers: {', '.join(model.get('providers', []))}; Mode: {', '.join(model.get('mode', []))}","confidence":model["confidence"],"details":"Inferred from AI/RAG library usage.","evidence":model.get("evidence", []),"open_questions":["State monthly budget ceilings and latency targets (p50/p95)."]},
+                  "q5": {"title":"Data/privacy constraints (PII, compliance, on‑prem, network limits)?","answer":"; ".join(compliance.get("posture", ["Unknown"])),"confidence":compliance["confidence"],"details":"Looked for SECURITY/COMPLIANCE docs and privacy mentions.","evidence":compliance.get("evidence", []),"open_questions":["Confirm if any PII/PHI is processed and required compliance frameworks."]},
+                  "q6": {"title":"Where should agents run (local dev, container, serverless, VM)?","answer":", ".join(runtime.get("run_targets", ["Unknown"])),"confidence":runtime["confidence"],"details":"Derived from infra config files.","evidence":runtime.get("evidence", []),"open_questions":["Name your target environment(s) and deployment cadence."]},
+                  "q7": {"title":"What approval gates should humans control?","answer":"; ".join(gates.get("gates", ["Unknown"])),"confidence":gates["confidence"],"details":"CODEOWNERS/PR templates/branch protection signals.","evidence":gates.get("evidence", []),"open_questions":["Confirm who approves PRs, releases, and production changes."]}
+              }
+
+              report = render(answers)
+              Path("agent_discovery_report.md").write_text(report, encoding="utf-8")
+              issue("Agent Bootstrap: Seven Answers", report)
+              print(report[:800])
+          except Exception:
+              Path("agent_discovery_report.md").write_text("# Agent Discovery Failed\\n\\n```\\n"+traceback.format_exc()+"\\n```", encoding="utf-8")
+              raise
+          PY
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-discovery-report
+          path: agent_discovery_report.md
+          if-no-files-found: ignore
