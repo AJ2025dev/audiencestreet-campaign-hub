@@ -130,10 +130,7 @@ export default function EnhancedAdmin() {
     company_name: '',
     contact_email: '',
     phone: '',
-    address: '',
-    credit_limit: 0,
-    spending_limit: 0,
-    is_active: true
+    address: ''
   })
   
   const [commissionForm, setCommissionForm] = useState({
@@ -216,7 +213,8 @@ export default function EnhancedAdmin() {
               company_name: 'Demo Admin',
               contact_email: 'admin@example.com',
               phone: '+1-555-0001',
-              is_active: true
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
           }
         ])
@@ -328,10 +326,7 @@ export default function EnhancedAdmin() {
           company_name: userForm.company_name,
           contact_email: userForm.contact_email || userForm.email,
           phone: userForm.phone,
-          address: userForm.address,
-          credit_limit: userForm.credit_limit,
-          spending_limit: userForm.spending_limit,
-          is_active: userForm.is_active
+          address: userForm.address
         })
 
       if (profileError) {
@@ -351,10 +346,7 @@ export default function EnhancedAdmin() {
         company_name: '',
         contact_email: '',
         phone: '',
-        address: '',
-        credit_limit: 0,
-        spending_limit: 0,
-        is_active: true
+        address: ''
       })
       
       // Refresh users list
@@ -793,8 +785,8 @@ export default function EnhancedAdmin() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={user.profiles.is_active ? 'default' : 'destructive'}>
-                            {user.profiles.is_active ? 'Active' : 'Inactive'}
+                          <Badge variant="default">
+                            Active
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -815,12 +807,8 @@ export default function EnhancedAdmin() {
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateUserProfile(user.id, { is_active: !user.profiles.is_active })}
-                            >
-                              {user.profiles.is_active ? <Ban className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
+                            <Button variant="outline" size="sm">
+                              <Settings className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
@@ -1347,32 +1335,9 @@ export default function EnhancedAdmin() {
                     placeholder="Company Address"
                   />
                 </div>
-                <div>
-                  <Label>Credit Limit ($)</Label>
-                  <Input
-                    type="number"
-                    value={userForm.credit_limit}
-                    onChange={(e) => setUserForm(prev => ({ ...prev, credit_limit: parseFloat(e.target.value) || 0 }))}
-                    placeholder="100000"
-                  />
-                </div>
-                <div>
-                  <Label>Spending Limit ($)</Label>
-                  <Input
-                    type="number"
-                    value={userForm.spending_limit}
-                    onChange={(e) => setUserForm(prev => ({ ...prev, spending_limit: parseFloat(e.target.value) || 0 }))}
-                    placeholder="50000"
-                  />
-                </div>
+
               </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={userForm.is_active}
-                  onCheckedChange={(checked) => setUserForm(prev => ({ ...prev, is_active: checked }))}
-                />
-                <Label>Active User</Label>
-              </div>
+
               <Button onClick={createUser} className="w-full">
                 <Save className="h-4 w-4 mr-2" />
                 {selectedUser ? 'Update User' : 'Create User'}

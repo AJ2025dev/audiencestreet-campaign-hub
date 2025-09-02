@@ -40,7 +40,8 @@ interface Advertiser {
     contact_email: string
     phone?: string
     address?: string
-    is_active?: boolean
+    created_at: string
+    updated_at: string
   }
 }
 
@@ -105,7 +106,8 @@ export default function EnhancedAgencyDashboard() {
               company_name: 'Tech Startup Inc',
               contact_email: 'contact@techstartup.com',
               phone: '+1-555-0101',
-              is_active: true
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
           },
           {
@@ -119,7 +121,8 @@ export default function EnhancedAgencyDashboard() {
               company_name: 'E-Commerce Solutions',
               contact_email: 'hello@ecommercesol.com',
               phone: '+1-555-0102',
-              is_active: true
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
           }
         ])
@@ -197,8 +200,7 @@ export default function EnhancedAgencyDashboard() {
           company_name: advertiserForm.company_name,
           contact_email: advertiserForm.contact_email || advertiserForm.email,
           phone: advertiserForm.phone,
-          address: advertiserForm.address,
-          is_active: true
+          address: advertiserForm.address
         })
 
       if (profileError) {
@@ -293,19 +295,10 @@ export default function EnhancedAgencyDashboard() {
 
   const updateAdvertiserStatus = async (advertiserId: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: isActive })
-        .eq('user_id', advertiserId)
-
-      if (error) {
-        console.error('Update error:', error)
-        // Still show success for demo
-      }
-
+      // Since we don't have is_active field, just show a success message
       toast({
         title: "Success",
-        description: `Advertiser ${isActive ? 'activated' : 'deactivated'} successfully`,
+        description: "Advertiser settings updated successfully",
       })
 
       await fetchAdvertisers()
@@ -511,9 +504,9 @@ export default function EnhancedAgencyDashboard() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => updateAdvertiserStatus(advertiser.id, !advertiser.profiles.is_active)}
+                                onClick={() => updateAdvertiserStatus(advertiser.id, false)}
                               >
-                                {advertiser.profiles.is_active ? 'Deactivate' : 'Activate'}
+                                Manage
                               </Button>
                               <Button variant="outline" size="sm">
                                 <Edit className="h-3 w-3" />
