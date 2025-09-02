@@ -65,16 +65,26 @@
 3. **Budget Control**: Set and monitor campaign budgets
 4. **Performance Tracking**: View campaign analytics and optimization suggestions
 
-## Recent Fixes (January 2, 2025)
+## Recent Updates (January 2, 2025)
+
+### 🚀 MAJOR ENHANCEMENT: Real Database User Creation System
+- **Implementation**: Supabase Edge Functions for proper user creation workflow
+- **Edge Functions Created**:
+  - `admin-create-user` - Allows admins to create users with any role
+  - `agency-create-advertiser` - Allows agencies to create advertisers under their management
+- **Database Flow**: auth.users → profiles → agency_advertisers (proper foreign key handling)
+- **Features**:
+  - ✅ Real Supabase authentication user creation
+  - ✅ Proper profile creation with user_id foreign key references
+  - ✅ Agency-advertiser relationship management
+  - ✅ Automatic password reset email integration
+  - ✅ Graceful fallback to demo mode if Edge Functions unavailable
+  - ✅ Role-based access control and security validation
 
 ### ✅ Foreign Key Constraint Resolution
-- **Issue**: Database errors when creating users due to Supabase auth.users foreign key requirements
-- **Solution**: Implemented demo mode for user creation in both EnhancedAdmin and EnhancedAgencyDashboard
-- **Technical Details**:
-  - Replaced database inserts with local state management
-  - Uses proper UUID generation with `crypto.randomUUID()`
-  - Maintains full UI functionality without database constraint violations
-  - Provides clear user feedback about demo mode operation
+- **Previous Issue**: Database errors when creating users due to Supabase auth.users foreign key requirements
+- **Current Solution**: Production-ready Edge Functions with proper auth workflow
+- **Fallback**: Demo mode still available if Edge Functions not deployed
 
 ### ✅ Build System Optimization
 - Successfully builds with Vite (build time: ~20-25 seconds)
@@ -135,9 +145,38 @@ Required for full functionality:
 - `EQUATIV_API_KEY` - Equativ DSP API key (stored via admin interface)
 - `OPENAI_API_KEY` - OpenAI API key for campaign strategy generation
 
+## Edge Functions Setup (Production User Creation)
+
+### 🚀 Real Database User Creation Available!
+The application now supports real database user creation through Supabase Edge Functions:
+
+#### Setup Required for Production Use:
+1. **Deploy Edge Functions**:
+   ```bash
+   supabase functions deploy admin-create-user
+   supabase functions deploy agency-create-advertiser
+   ```
+
+2. **Set Environment Variables** in Supabase Dashboard:
+   ```bash
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   SITE_URL=https://aj2025dev.github.io/audiencestreet-campaign-hub
+   ```
+
+3. **Test User Creation**:
+   - Login as admin → `/admin` → "Add User"
+   - Login as agency → `/agency` → "Add Advertiser"
+
+📚 **Full Setup Guide**: See `EDGE_FUNCTIONS_SETUP.md` for comprehensive instructions
+
+#### Current Behavior:
+- ✅ **Edge Functions Available**: Real database user creation with proper auth flow
+- 🔄 **Edge Functions Not Deployed**: Graceful fallback to demo mode
+- 📧 **Password Management**: Automatic password reset emails sent to new users
+
 ## Next Development Steps
-1. **Real Database Integration** - Implement proper Supabase Admin API user creation
-2. **Enhanced Analytics** - Add detailed performance reporting and dashboards
-3. **Campaign Automation** - Expand AI-powered campaign optimization features
-4. **Third-party Integrations** - Add Google Ads, Facebook Ads API integrations
-5. **Real-time Features** - Implement live campaign monitoring and notifications
+1. **Enhanced Analytics** - Add detailed performance reporting and dashboards
+2. **Campaign Automation** - Expand AI-powered campaign optimization features
+3. **Third-party Integrations** - Add Google Ads, Facebook Ads API integrations
+4. **Real-time Features** - Implement live campaign monitoring and notifications
+5. **Bulk User Import** - CSV import functionality for batch user creation
