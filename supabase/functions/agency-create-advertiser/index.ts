@@ -1,9 +1,9 @@
-import { serve } from 'https://deno.land/std@0.208.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0'
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.53.0"
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
 interface CreateAdvertiserRequest {
@@ -17,15 +17,15 @@ interface CreateAdvertiserRequest {
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
   }
 
   try {
     // Initialize Supabase Admin Client
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       {
         auth: {
           autoRefreshToken: false,
@@ -35,42 +35,43 @@ serve(async (req) => {
     )
 
     // Verify the requesting user is an agency
-    const authHeader = req.headers.get('Authorization')
+    const authHeader = req.headers.get("Authorization")
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Authorization header required' }),
+        JSON.stringify({ error: "Authorization header required" }),
         { 
           status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       )
     }
     
-    const token = authHeader.replace('Bearer ', '')
+    const token = authHeader.replace("Bearer ", "")
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
+    
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: "Unauthorized" }),
         { 
           status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       )
     }
 
     // Check if user has agency role
     const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
+      .from("profiles")
+      .select("role")
+      .eq("user_id", user.id)
       .single()
 
-    if (!profile || profile.role !== 'agency') {
+    if (!profile || profile.role !== "agency") {
       return new Response(
-        JSON.stringify({ error: 'Agency access required' }),
+        JSON.stringify({ error: "Agency access required" }),
         { 
           status: 403, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       )
     }
@@ -81,11 +82,11 @@ serve(async (req) => {
     if (!requestData.email || !requestData.company_name) {
       return new Response(
         JSON.stringify({ 
-          error: 'Missing required fields: email, company_name' 
+          error: "Missing required fields: email, company_name" 
         }),
         { 
           status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       )
     }
@@ -101,34 +102,34 @@ serve(async (req) => {
     })
 
     if (authError) {
-      console.error('Auth user creation error:', authError)
+      console.error("Auth user creation error:", authError)
       return new Response(
         JSON.stringify({ 
           error: `Failed to create auth user: ${authError.message}` 
         }),
         { 
           status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       )
     }
 
     if (!authUser.user) {
       return new Response(
-        JSON.stringify({ error: 'Failed to create auth user' }),
+        JSON.stringify({ error: "Failed to create auth user" }),
         { 
           status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       )
     }
 
     // Step 2: Create advertiser profile
     const { data: profileData, error: profileError } = await supabaseAdmin
-      .from('profiles')
+      .from("profiles")
       .insert({
         user_id: authUser.user.id,
-        role: 'advertiser',
+        role: "advertiser",
         company_name: requestData.company_name,
         contact_email: requestData.contact_email || requestData.email,
         phone: requestData.phone,
@@ -140,7 +141,7 @@ serve(async (req) => {
       .single()
 
     if (profileError) {
-      console.error('Profile creation error:', profileError)
+      console.error("Profile creation error:", profileError)
       
       // If profile creation fails, clean up the auth user
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
@@ -151,14 +152,14 @@ serve(async (req) => {
         }),
         { 
           status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       )
     }
 
     // Step 3: Create agency-advertiser relationship
     const { error: relationshipError } = await supabaseAdmin
-      .from('agency_advertisers')
+      .from("agency_advertisers")
       .insert({
         agency_id: user.id,
         advertiser_id: authUser.user.id,
@@ -167,7 +168,7 @@ serve(async (req) => {
       })
 
     if (relationshipError) {
-      console.error('Agency-advertiser relationship error:', relationshipError)
+      console.error("Agency-advertiser relationship error:", relationshipError)
       // Note: We don't clean up on this error as the user and profile are valid
       // The relationship can be created manually or through another process
     }
@@ -175,7 +176,7 @@ serve(async (req) => {
     // Step 4: Send password reset email so advertiser can set their own password
     if (!requestData.password) {
       await supabaseAdmin.auth.resetPasswordForEmail(requestData.email, {
-        redirectTo: `${Deno.env.get('SITE_URL') || 'http://localhost:3000'}/auth/reset-password`
+        redirectTo: `${Deno.env.get("SITE_URL") || "http://localhost:3000"}/auth/reset-password`
       })
     }
 
@@ -189,23 +190,23 @@ serve(async (req) => {
           created_at: authUser.user.created_at,
           profiles: profileData
         },
-        message: `Advertiser created successfully and linked to your agency. ${!requestData.password ? 'Password reset email sent.' : 'Temporary password provided.'}`
+        message: `Advertiser created successfully and linked to your agency. ${!requestData.password ? "Password reset email sent." : "Temporary password provided."}`
       }),
       { 
         status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
     )
 
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error("Unexpected error:", error)
     return new Response(
       JSON.stringify({ 
         error: `Internal server error: ${error.message}` 
       }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
     )
   }
