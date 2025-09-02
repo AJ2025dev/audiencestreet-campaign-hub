@@ -55,14 +55,14 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute requireRole="admin">
                 <Layout>
-                  <SimpleAdmin />
+                  <EnhancedAdmin />
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/admin/enhanced" element={
+            <Route path="/admin/simple" element={
               <ProtectedRoute requireRole="admin">
                 <Layout>
-                  <EnhancedAdmin />
+                  <SimpleAdmin />
                 </Layout>
               </ProtectedRoute>
             } />
