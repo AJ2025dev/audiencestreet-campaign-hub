@@ -316,8 +316,58 @@ export default function EnhancedAdmin() {
     }
 
     try {
-      // In production, this would use Supabase Admin API to create auth user first
-      // For demo purposes, we'll add the user to local state
+      // Call Supabase Edge Function for real user creation
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: userForm.email,
+          role: userForm.role,
+          company_name: userForm.company_name,
+          contact_email: userForm.contact_email || userForm.email,
+          phone: userForm.phone,
+          address: userForm.address
+        }
+      })
+
+      if (error) {
+        console.error('Error creating user:', error)
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create user",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Success",
+          description: data.message || `User '${userForm.company_name}' created successfully`,
+        })
+
+        // Refresh users list to show the new user
+        await fetchUsers()
+
+        setIsUserDialogOpen(false)
+        setUserForm({
+          email: '',
+          role: 'advertiser',
+          company_name: '',
+          contact_email: '',
+          phone: '',
+          address: ''
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: data?.error || "Failed to create user",
+          variant: "destructive",
+        })
+      }
+      
+    } catch (error: any) {
+      console.error('Error creating user:', error)
+      
+      // Fallback to demo mode if Edge Function is not available
       const newUserId = crypto.randomUUID()
       
       const newUser = {
@@ -337,12 +387,12 @@ export default function EnhancedAdmin() {
         }
       }
       
-      // Add to local state for immediate display
       setUsers(prevUsers => [...prevUsers, newUser])
 
       toast({
-        title: "Success",
-        description: `User '${userForm.company_name}' created successfully (demo mode)`,
+        title: "Demo Mode",
+        description: `User '${userForm.company_name}' created in demo mode. Configure Supabase Edge Functions for production user creation.`,
+        variant: "default",
       })
 
       setIsUserDialogOpen(false)
@@ -353,14 +403,6 @@ export default function EnhancedAdmin() {
         contact_email: '',
         phone: '',
         address: ''
-      })
-      
-    } catch (error: any) {
-      console.error('Error creating user:', error)
-      toast({
-        title: "Demo Mode",
-        description: "User creation completed in demo mode",
-        variant: "default",
       })
     }
   }

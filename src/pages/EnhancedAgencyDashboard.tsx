@@ -192,8 +192,56 @@ export default function EnhancedAgencyDashboard() {
     }
 
     try {
-      // In production, this would create real auth user and profile
-      // For demo purposes, add to local state
+      // Call Supabase Edge Function for real advertiser creation
+      const { data, error } = await supabase.functions.invoke('agency-create-advertiser', {
+        body: {
+          email: advertiserForm.email,
+          company_name: advertiserForm.company_name,
+          contact_email: advertiserForm.contact_email || advertiserForm.email,
+          phone: advertiserForm.phone,
+          address: advertiserForm.address
+        }
+      })
+
+      if (error) {
+        console.error('Error creating advertiser:', error)
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create advertiser",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Success",
+          description: data.message || `Advertiser '${advertiserForm.company_name}' created successfully`,
+        })
+
+        // Refresh advertisers list to show the new advertiser
+        await fetchAdvertisers()
+
+        setIsAdvertiserDialogOpen(false)
+        setAdvertiserForm({
+          email: '',
+          company_name: '',
+          contact_email: '',
+          phone: '',
+          address: ''
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: data?.error || "Failed to create advertiser",
+          variant: "destructive",
+        })
+      }
+      
+    } catch (error: any) {
+      console.error('Error creating advertiser:', error)
+      
+      // Fallback to demo mode if Edge Function is not available
       const newAdvertiserId = crypto.randomUUID()
       
       const newAdvertiser = {
@@ -213,12 +261,12 @@ export default function EnhancedAgencyDashboard() {
         }
       }
       
-      // Add to local state for immediate display
       setAdvertisers(prevAdvertisers => [...prevAdvertisers, newAdvertiser])
 
       toast({
-        title: "Success",
-        description: `Advertiser '${advertiserForm.company_name}' added successfully (demo mode)`,
+        title: "Demo Mode",
+        description: `Advertiser '${advertiserForm.company_name}' created in demo mode. Configure Supabase Edge Functions for production creation.`,
+        variant: "default",
       })
 
       setIsAdvertiserDialogOpen(false)
@@ -228,14 +276,6 @@ export default function EnhancedAgencyDashboard() {
         contact_email: '',
         phone: '',
         address: ''
-      })
-      
-    } catch (error: any) {
-      console.error('Error creating advertiser:', error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create advertiser",
-        variant: "destructive",
       })
     }
   }
