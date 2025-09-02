@@ -192,42 +192,33 @@ export default function EnhancedAgencyDashboard() {
     }
 
     try {
-      // Create advertiser profile with proper UUID
+      // In production, this would create real auth user and profile
+      // For demo purposes, add to local state
       const newAdvertiserId = crypto.randomUUID()
       
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
+      const newAdvertiser = {
+        id: newAdvertiserId,
+        email: advertiserForm.email,
+        created_at: new Date().toISOString(),
+        profiles: {
+          id: newAdvertiserId,
           user_id: newAdvertiserId,
           role: 'advertiser',
           company_name: advertiserForm.company_name,
           contact_email: advertiserForm.contact_email || advertiserForm.email,
           phone: advertiserForm.phone,
-          address: advertiserForm.address
-        })
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError)
-        throw new Error(`Failed to create advertiser profile: ${profileError.message}`)
+          address: advertiserForm.address,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
       }
-
-      // Create agency-advertiser relationship
-      const { error: relationError } = await supabase
-        .from('agency_advertisers')
-        .insert({
-          agency_id: user?.id,
-          advertiser_id: newAdvertiserId,
-          is_active: true
-        })
-
-      if (relationError) {
-        console.error('Relation creation error:', relationError)
-        // Still show success even if relation fails (could be table doesn't exist yet)
-      }
+      
+      // Add to local state for immediate display
+      setAdvertisers(prevAdvertisers => [...prevAdvertisers, newAdvertiser])
 
       toast({
         title: "Success",
-        description: `Advertiser '${advertiserForm.company_name}' added successfully`,
+        description: `Advertiser '${advertiserForm.company_name}' added successfully (demo mode)`,
       })
 
       setIsAdvertiserDialogOpen(false)
@@ -238,9 +229,6 @@ export default function EnhancedAgencyDashboard() {
         phone: '',
         address: ''
       })
-      
-      // Refresh advertisers list
-      await fetchAdvertisers()
       
     } catch (error: any) {
       console.error('Error creating advertiser:', error)
