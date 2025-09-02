@@ -94,14 +94,17 @@ export default function EnhancedAgencyDashboard() {
       if (managedError) {
         console.error('Error fetching managed advertisers:', managedError)
         // Show demo data for agencies
+        const demoAdvertiser1Id = '87654321-1234-4567-8901-123456789001'
+        const demoAdvertiser2Id = '87654321-1234-4567-8901-123456789002'
+        
         setAdvertisers([
           {
-            id: 'demo-advertiser-1',
+            id: demoAdvertiser1Id,
             email: 'advertiser1@example.com',
             created_at: new Date().toISOString(),
             profiles: {
-              id: 'demo-advertiser-1',
-              user_id: 'demo-advertiser-1',
+              id: demoAdvertiser1Id,
+              user_id: demoAdvertiser1Id,
               role: 'advertiser',
               company_name: 'Tech Startup Inc',
               contact_email: 'contact@techstartup.com',
@@ -111,12 +114,12 @@ export default function EnhancedAgencyDashboard() {
             }
           },
           {
-            id: 'demo-advertiser-2', 
+            id: demoAdvertiser2Id, 
             email: 'advertiser2@example.com',
             created_at: new Date().toISOString(),
             profiles: {
-              id: 'demo-advertiser-2',
-              user_id: 'demo-advertiser-2',
+              id: demoAdvertiser2Id,
+              user_id: demoAdvertiser2Id,
               role: 'advertiser',
               company_name: 'E-Commerce Solutions',
               contact_email: 'hello@ecommercesol.com',
@@ -189,8 +192,8 @@ export default function EnhancedAgencyDashboard() {
     }
 
     try {
-      // Create advertiser profile
-      const newAdvertiserId = `advertiser_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+      // Create advertiser profile with proper UUID
+      const newAdvertiserId = crypto.randomUUID()
       
       const { error: profileError } = await supabase
         .from('profiles')

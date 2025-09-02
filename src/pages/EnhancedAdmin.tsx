@@ -201,14 +201,15 @@ export default function EnhancedAdmin() {
       if (error) {
         console.error('Error fetching profiles:', error)
         // Still show some data for demo purposes
+        const demoUserId = '12345678-1234-4567-8901-123456789012'
         setUsers([
           {
-            id: 'demo-user-1',
+            id: demoUserId,
             email: 'admin@example.com',
             created_at: new Date().toISOString(),
             profiles: {
-              id: 'demo-user-1',
-              user_id: 'demo-user-1',
+              id: demoUserId,
+              user_id: demoUserId,
               role: 'admin',
               company_name: 'Demo Admin',
               contact_email: 'admin@example.com',
@@ -315,8 +316,8 @@ export default function EnhancedAdmin() {
     }
 
     try {
-      // Create profile entry
-      const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+      // Create profile entry with proper UUID
+      const newUserId = crypto.randomUUID()
       
       const { error: profileError } = await supabase
         .from('profiles')
