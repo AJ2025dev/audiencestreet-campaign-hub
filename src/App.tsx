@@ -21,6 +21,7 @@ import Reports from "./pages/Reports";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Admin from "./pages/Admin";
+import EnhancedAdmin from "./pages/EnhancedAdmin";
 import DomainLists from "./pages/DomainLists";
 import AppLists from "./pages/AppLists";
 import PublisherLists from "./pages/PublisherLists";
@@ -51,6 +52,13 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/auth" element={<Navigate to="/login" replace />} />
             <Route path="/admin" element={
+              <ProtectedRoute requireRole="admin">
+                <Layout>
+                  <EnhancedAdmin />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/legacy" element={
               <ProtectedRoute requireRole="admin">
                 <Layout>
                   <Admin />
