@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Functions Diagnostic Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f4f4f4; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Supabase Edge Functions Diagnostic Tool</h1>
+    
+    <h2>Configuration</h2>
+    <div id="config-info" class="test-result info">
+        <strong>Supabase URL:</strong> https://uzcmjulbpmeythxfusrm.supabase.co<br>
+        <strong>Expected Edge Functions:</strong>
+        <ul>
+            <li>admin-create-user</li>
+            <li>agency-create-advertiser</li>
+        </ul>
+    </div>
+
+    <h2>Tests</h2>
+    <button onclick="testEdgeFunctionAvailability()">Test Edge Function Availability</button>
+    <button onclick="testAuthenticatedCall()">Test Authenticated Call (requires login)</button>
+    <button onclick="clearResults()">Clear Results</button>
+
+    <div id="results"></div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0'
+        
+        const supabase = createClient(
+            'https://uzcmjulbpmeythxfusrm.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U'
+        )
+
+        window.supabase = supabase
+
+        function addResult(content, type = 'info') {
+            const div = document.createElement('div')
+            div.className = `test-result ${type}`
+            div.innerHTML = content
+            document.getElementById('results').appendChild(div)
+        }
+
+        window.testEdgeFunctionAvailability = async function() {
+            addResult('<strong>Testing Edge Function Availability...</strong>', 'info')
+            
+            // Test admin-create-user function
+            try {
+                const response = await fetch('https://uzcmjulbpmeythxfusrm.supabase.co/functions/v1/admin-create-user', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'authorization, content-type'
+                    }
+                })
+                
+                if (response.ok) {
+                    addResult('✅ admin-create-user function is deployed and accessible', 'success')
+                } else {
+                    addResult(`❌ admin-create-user function returned status: ${response.status}`, 'error')
+                }
+            } catch (error) {
+                addResult(`❌ admin-create-user function not accessible: ${error.message}`, 'error')
+            }
+
+            // Test agency-create-advertiser function
+            try {
+                const response = await fetch('https://uzcmjulbpmeythxfusrm.supabase.co/functions/v1/agency-create-advertiser', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'authorization, content-type'
+                    }
+                })
+                
+                if (response.ok) {
+                    addResult('✅ agency-create-advertiser function is deployed and accessible', 'success')
+                } else {
+                    addResult(`❌ agency-create-advertiser function returned status: ${response.status}`, 'error')
+                }
+            } catch (error) {
+                addResult(`❌ agency-create-advertiser function not accessible: ${error.message}`, 'error')
+            }
+        }
+
+        window.testAuthenticatedCall = async function() {
+            addResult('<strong>Testing Authenticated Edge Function Call...</strong>', 'info')
+            
+            // Check if user is logged in
+            const { data: { user } } = await supabase.auth.getUser()
+            
+            if (!user) {
+                addResult('❌ No authenticated user. Please login first.', 'error')
+                return
+            }
+            
+            addResult(`✅ Authenticated as: ${user.email}`, 'success')
+            
+            // Test calling the admin-create-user function with invalid data to see error handling
+            try {
+                const { data, error } = await supabase.functions.invoke('admin-create-user', {
+                    body: {
+                        email: 'test@example.com',
+                        // Missing required fields to trigger validation error
+                    }
+                })
+                
+                if (error) {
+                    addResult(`🔍 Edge Function Error Response:<pre>${JSON.stringify(error, null, 2)}</pre>`, 'error')
+                } else {
+                    addResult(`🔍 Edge Function Data Response:<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info')
+                }
+            } catch (error) {
+                addResult(`❌ Failed to invoke Edge Function: ${error.message}`, 'error')
+            }
+        }
+
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = ''
+        }
+    </script>
+</body>
+</html>

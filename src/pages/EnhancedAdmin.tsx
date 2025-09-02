@@ -329,13 +329,31 @@ export default function EnhancedAdmin() {
       })
 
       if (error) {
-        console.error('Error creating user:', error)
+        console.error('Edge Function error details:', {
+          error,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        
+        let errorMessage = "Failed to create user"
+        if (error.message?.includes('not found')) {
+          errorMessage = "Edge Function not deployed. Using demo mode instead."
+        } else if (error.message?.includes('service_role')) {
+          errorMessage = "Service role key not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Supabase dashboard."
+        } else {
+          errorMessage = error.message || error.details || "Unknown error occurred"
+        }
+        
         toast({
-          title: "Error",
-          description: error.message || "Failed to create user",
+          title: "Edge Function Error",
+          description: errorMessage,
           variant: "destructive",
         })
-        return
+        
+        // Don't return here - fall through to demo mode
+        console.log('Falling back to demo mode due to Edge Function error')
       }
 
       if (data?.success) {
@@ -356,13 +374,18 @@ export default function EnhancedAdmin() {
           phone: '',
           address: ''
         })
-      } else {
+        return // Success - don't continue to demo mode
+      } else if (data?.error) {
+        console.error('Edge Function returned error:', data.error)
         toast({
           title: "Error",
-          description: data?.error || "Failed to create user",
+          description: data.error || "Failed to create user",
           variant: "destructive",
         })
+        return // Error from function - don't continue to demo mode
       }
+      
+      // If we get here, there was an issue but let's continue to demo mode
       
     } catch (error: any) {
       console.error('Error creating user:', error)
