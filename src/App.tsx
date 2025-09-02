@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import Dashboard from "./pages/Dashboard";
 import AgencyDashboard from "./pages/AgencyDashboard";
+import EnhancedAgencyDashboard from "./pages/EnhancedAgencyDashboard";
 import AdvertiserDashboard from "./pages/AdvertiserDashboard";
 import Advertisers from "./pages/Advertisers";
 import AdvertiserCampaigns from "./pages/AdvertiserCampaigns";
@@ -74,6 +75,13 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/agency" element={
+              <ProtectedRoute requireRole="agency">
+                <Layout>
+                  <EnhancedAgencyDashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/agency/legacy" element={
               <ProtectedRoute requireRole="agency">
                 <Layout>
                   <AgencyDashboard />

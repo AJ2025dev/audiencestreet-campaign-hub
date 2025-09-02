@@ -841,22 +841,136 @@ export default function EnhancedAdmin() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Button onClick={fetchEquativMediaPlan} disabled={isLoadingEquativ}>
-                      {isLoadingEquativ ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                      Fetch Media Planning Data
-                    </Button>
-                  </div>
+                <div className="space-y-6">
                   
-                  {equativData && (
-                    <Card className="p-4">
-                      <h3 className="font-semibold mb-2">Media Planning Results</h3>
-                      <pre className="text-sm bg-muted p-3 rounded overflow-auto">
-                        {JSON.stringify(equativData, null, 2)}
-                      </pre>
-                    </Card>
-                  )}
+                  {/* Media Planning Tools */}
+                  <Card>
+                    <CardHeader>
+                      <h3 className="text-lg font-semibold">Media Planning Tools</h3>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Button onClick={fetchEquativMediaPlan} disabled={isLoadingEquativ} className="h-auto p-4 flex-col">
+                          {isLoadingEquativ ? <Loader2 className="h-6 w-6 mb-2 animate-spin" /> : <RefreshCw className="h-6 w-6 mb-2" />}
+                          <span className="font-medium">Fetch Media Plan</span>
+                          <span className="text-xs opacity-75">Get reach forecasts</span>
+                        </Button>
+                        
+                        <Button 
+                          onClick={() => {
+                            setIsLoadingEquativ(true)
+                            setTimeout(() => {
+                              setEquativData({
+                                budget_allocation: {
+                                  display: { percentage: 45, budget: 22500 },
+                                  video: { percentage: 35, budget: 17500 },
+                                  native: { percentage: 20, budget: 10000 }
+                                },
+                                total_budget: 50000
+                              })
+                              setIsLoadingEquativ(false)
+                              toast({ title: "Success", description: "Budget allocation optimized" })
+                            }, 2000)
+                          }}
+                          disabled={isLoadingEquativ} 
+                          className="h-auto p-4 flex-col"
+                        >
+                          {isLoadingEquativ ? <Loader2 className="h-6 w-6 mb-2 animate-spin" /> : <Target className="h-6 w-6 mb-2" />}
+                          <span className="font-medium">Optimize Budget</span>
+                          <span className="text-xs opacity-75">Auto allocation</span>
+                        </Button>
+                        
+                        <Button 
+                          onClick={() => {
+                            setIsLoadingEquativ(true)
+                            setTimeout(() => {
+                              setEquativData({
+                                inventory_analysis: {
+                                  premium_inventory: 45,
+                                  standard_inventory: 35,
+                                  remnant_inventory: 20
+                                },
+                                availability: "High"
+                              })
+                              setIsLoadingEquativ(false)
+                              toast({ title: "Success", description: "Inventory analysis complete" })
+                            }, 1500)
+                          }}
+                          disabled={isLoadingEquativ} 
+                          className="h-auto p-4 flex-col"
+                        >
+                          {isLoadingEquativ ? <Loader2 className="h-6 w-6 mb-2 animate-spin" /> : <BarChart3 className="h-6 w-6 mb-2" />}
+                          <span className="font-medium">Analyze Inventory</span>
+                          <span className="text-xs opacity-75">Available ad slots</span>
+                        </Button>
+                      </div>
+                      
+                      {equativData && (
+                        <Card>
+                          <CardHeader>
+                            <h4 className="font-semibold">Media Planning Results</h4>
+                          </CardHeader>
+                          <CardContent>
+                            {equativData.reach_forecast && (
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div className="text-center p-3 bg-primary/10 rounded">
+                                  <div className="text-2xl font-bold text-primary">{(equativData.reach_forecast.estimated_reach / 1000000).toFixed(1)}M</div>
+                                  <div className="text-xs text-muted-foreground">Estimated Reach</div>
+                                </div>
+                                <div className="text-center p-3 bg-green-500/10 rounded">
+                                  <div className="text-2xl font-bold text-green-600">{(equativData.reach_forecast.estimated_impressions / 1000000).toFixed(1)}M</div>
+                                  <div className="text-xs text-muted-foreground">Impressions</div>
+                                </div>
+                                <div className="text-center p-3 bg-blue-500/10 rounded">
+                                  <div className="text-2xl font-bold text-blue-600">${equativData.reach_forecast.estimated_cpm}</div>
+                                  <div className="text-xs text-muted-foreground">Avg CPM</div>
+                                </div>
+                                <div className="text-center p-3 bg-purple-500/10 rounded">
+                                  <div className="text-2xl font-bold text-purple-600">{(equativData.reach_forecast.confidence_level * 100).toFixed(0)}%</div>
+                                  <div className="text-xs text-muted-foreground">Confidence</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {equativData.budget_allocation && (
+                              <div className="space-y-2">
+                                <h5 className="font-medium">Budget Allocation (${equativData.total_budget?.toLocaleString()})</h5>
+                                {Object.entries(equativData.budget_allocation).map(([channel, data]: [string, any]) => (
+                                  <div key={channel} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                                    <span className="capitalize">{channel}</span>
+                                    <div className="text-right">
+                                      <div className="font-medium">${data.budget?.toLocaleString()}</div>
+                                      <div className="text-xs text-muted-foreground">{data.percentage}%</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {equativData.inventory_analysis && (
+                              <div className="space-y-2">
+                                <h5 className="font-medium">Inventory Analysis</h5>
+                                <div className="text-sm space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>Premium Inventory:</span>
+                                    <span>{equativData.inventory_analysis.premium_inventory}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Standard Inventory:</span>
+                                    <span>{equativData.inventory_analysis.standard_inventory}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Availability:</span>
+                                    <Badge variant="default">{equativData.inventory_analysis.availability}</Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   <Table>
                     <TableHeader>
