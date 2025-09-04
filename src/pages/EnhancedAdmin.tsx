@@ -193,51 +193,93 @@ export default function EnhancedAdmin() {
   // Data fetching functions
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-
+      // Use Edge Function to get all users (auth + profiles combined)
+      const { data, error } = await supabase.functions.invoke('admin-list-users', {
+  body: {},
+  headers: {
+    Authorization: `Bearer ${supabase.supabaseKey}`,
+  }
+})
       if (error) {
-        console.error('Error fetching profiles:', error)
-        // Still show some data for demo purposes
-        const demoUserId = '12345678-1234-4567-8901-123456789012'
-        setUsers([
-          {
-            id: demoUserId,
-            email: 'admin@example.com',
-            created_at: new Date().toISOString(),
-            profiles: {
+        console.error('Edge Function error:', error)
+        
+        // Fallback: try to get profiles directly
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (profileError) {
+          console.error('Fallback profiles fetch error:', profileError)
+          // Show demo data as last resort
+          const demoUserId = '12345678-1234-4567-8901-123456789012'
+          setUsers([
+            {
               id: demoUserId,
-              user_id: demoUserId,
-              role: 'admin',
-              company_name: 'Demo Admin',
-              contact_email: 'admin@example.com',
-              phone: '+1-555-0001',
+              email: 'admin@example.com',
               created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              profiles: {
+                id: demoUserId,
+                user_id: demoUserId,
+                role: 'admin',
+                company_name: 'Demo Admin',
+                contact_email: 'admin@example.com',
+                phone: '+1-555-0001',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
             }
-          }
-        ])
+          ])
+          return
+        }
+
+        // Format profiles data
+        const formattedUsers = profileData?.map(profile => ({
+          id: profile.user_id || profile.id,
+          email: profile.contact_email || profile.email || 'user@company.com',
+          created_at: profile.created_at,
+          profiles: profile
+        })) || []
+
+        setUsers(formattedUsers)
         return
       }
 
-      // Format real users data
-      const formattedUsers = data?.map(profile => ({
-        id: profile.user_id || profile.id,
-        email: profile.contact_email || profile.email || 'user@company.com',
-        created_at: profile.created_at,
-        profiles: profile
-      })) || []
+      if (data?.success && data?.users) {
+        console.log('✅ Users fetched successfully:', data.users.length)
+        setUsers(data.users)
+      } else {
+        console.error('Unexpected response format:', data)
+        setUsers([])
+      }
 
-      setUsers(formattedUsers)
     } catch (error) {
       console.error('Error fetching users:', error)
       toast({
         title: "Error",
-        description: "Failed to fetch users",
+        description: "Failed to fetch users. Using demo data.",
         variant: "destructive",
       })
+      
+      // Show demo data on error
+      const demoUserId = '12345678-1234-4567-8901-123456789012'
+      setUsers([
+        {
+          id: demoUserId,
+          email: 'admin@example.com',
+          created_at: new Date().toISOString(),
+          profiles: {
+            id: demoUserId,
+            user_id: demoUserId,
+            role: 'admin',
+            company_name: 'Demo Admin',
+            contact_email: 'admin@example.com',
+            phone: '+1-555-0001',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        }
+      ])
     }
   }
 
@@ -318,19 +360,18 @@ export default function EnhancedAdmin() {
     try {
       // Call Supabase Edge Function for real user creation
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
-        body: {
-          email: userForm.email,
-          role: userForm.role,
-          company_name: userForm.company_name,
-          contact_email: userForm.contact_email || userForm.email,
-          phone: userForm.phone,
-          address: userForm.address
-        }
-  ,
+  body: {
+    email: userForm.email,
+    role: userForm.role,
+    company_name: userForm.company_name,
+    contact_email: userForm.contact_email || userForm.email,
+    phone: userForm.phone,
+    address: userForm.address
+  },
   headers: {
     Authorization: `Bearer ${supabase.supabaseKey}`,
   }
-      })
+})
 
       if (error) {
         console.error('Edge Function error details:', {
