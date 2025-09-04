@@ -1581,10 +1581,26 @@ export default function EnhancedAdmin() {
 
               </div>
 
-              <Button onClick={createUser} className="w-full">
-                <Save className="h-4 w-4 mr-2" />
-                {selectedUser ? 'Update User' : 'Create User'}
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  onClick={() => {
+                    console.log('🔍 Current form state:', userForm)
+                    toast({
+                      title: "Debug Info",
+                      description: `Role: ${userForm.role}, Email: ${userForm.email}, Company: ${userForm.company_name}`,
+                    })
+                  }} 
+                  variant="outline" 
+                  className="w-full"
+                >
+                  🔍 Debug Form State
+                </Button>
+                
+                <Button onClick={createUser} className="w-full">
+                  <Save className="h-4 w-4 mr-2" />
+                  {selectedUser ? 'Update User' : 'Create User'}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
