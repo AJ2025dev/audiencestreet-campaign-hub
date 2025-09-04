@@ -357,6 +357,50 @@ export default function EnhancedAdmin() {
       return
     }
 
+    // Handle editing existing user
+    if (selectedUser) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            role: userForm.role,
+            company_name: userForm.company_name,
+            contact_email: userForm.contact_email || userForm.email,
+            phone: userForm.phone,
+            address: userForm.address
+          })
+          .eq('user_id', selectedUser.id)
+        
+        if (error) throw error
+        
+        toast({
+          title: "Success",
+          description: `User '${userForm.company_name}' updated successfully`,
+        })
+
+        await fetchUsers() // Refresh the user list
+        setIsUserDialogOpen(false)
+        setSelectedUser(null)
+        setUserForm({
+          email: '',
+          role: 'admin',
+          company_name: '',
+          contact_email: '',
+          phone: '',
+          address: ''
+        })
+        return
+      } catch (error: any) {
+        console.error('Error updating user:', error)
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update user",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
     try {
       // Call Supabase Edge Function for real user creation
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
@@ -411,9 +455,10 @@ export default function EnhancedAdmin() {
         await fetchUsers()
 
         setIsUserDialogOpen(false)
+        setSelectedUser(null)
         setUserForm({
           email: '',
-          role: 'advertiser',
+          role: 'admin',
           company_name: '',
           contact_email: '',
           phone: '',
@@ -464,9 +509,10 @@ export default function EnhancedAdmin() {
       })
 
       setIsUserDialogOpen(false)
+      setSelectedUser(null)
       setUserForm({
         email: '',
-        role: 'advertiser',
+        role: 'admin',
         company_name: '',
         contact_email: '',
         phone: '',
@@ -543,6 +589,53 @@ export default function EnhancedAdmin() {
       key_value: '',
       description: ''
     })
+  }
+
+  const sendWelcomeEmail = async (email: string) => {
+    try {
+      toast({
+        title: "Sending Email",
+        description: `Sending welcome email to ${email}...`,
+      })
+
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: { email },
+        headers: {
+          Authorization: `Bearer ${supabase.supabaseKey}`,
+        }
+      })
+
+      if (error) {
+        console.error('Welcome email error:', error)
+        toast({
+          title: "Email Error",
+          description: error.message || "Failed to send email",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Email Sent",
+          description: `Welcome email sent successfully to ${email}`,
+        })
+      } else {
+        console.log('Email send response:', data)
+        toast({
+          title: "Email Issue",
+          description: data?.message || "Email may not have been sent. Check logs for details.",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error('Welcome email send error:', error)
+      toast({
+        title: "Email Error", 
+        description: error.message || "Failed to send welcome email",
+        variant: "destructive",
+      })
+    }
   }
 
   // Equativ integration functions
@@ -721,6 +814,30 @@ export default function EnhancedAdmin() {
       checkAdminAccess()
     }
   }, [user])
+
+  // Populate form when editing a user
+  useEffect(() => {
+    if (selectedUser && isUserDialogOpen) {
+      setUserForm({
+        email: selectedUser.email,
+        role: selectedUser.profiles.role,
+        company_name: selectedUser.profiles.company_name || '',
+        contact_email: selectedUser.profiles.contact_email || '',
+        phone: selectedUser.profiles.phone || '',
+        address: selectedUser.profiles.address || ''
+      })
+    } else if (!selectedUser && isUserDialogOpen) {
+      // Reset form for new user creation
+      setUserForm({
+        email: '',
+        role: 'admin',
+        company_name: '',
+        contact_email: '',
+        phone: '',
+        address: ''
+      })
+    }
+  }, [selectedUser, isUserDialogOpen])
 
   useEffect(() => {
     const loadData = async () => {
@@ -919,6 +1036,13 @@ export default function EnhancedAdmin() {
                               }}
                             >
                               <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => sendWelcomeEmail(user.profiles.contact_email)}
+                            >
+                              <Mail className="h-3 w-3" />
                             </Button>
                             <Button variant="outline" size="sm">
                               <Settings className="h-3 w-3" />
@@ -1383,7 +1507,10 @@ export default function EnhancedAdmin() {
         {/* Dialogs */}
         
         {/* Add/Edit User Dialog */}
-        <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+        <Dialog open={isUserDialogOpen} onOpenChange={(open) => {
+          setIsUserDialogOpen(open)
+          if (!open) setSelectedUser(null)
+        }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
@@ -1399,7 +1526,6 @@ export default function EnhancedAdmin() {
                     value={userForm.email}
                     onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="user@example.com"
-                    disabled={!!selectedUser}
                   />
                 </div>
                 <div>
