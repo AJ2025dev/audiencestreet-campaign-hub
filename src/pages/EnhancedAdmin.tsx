@@ -402,6 +402,8 @@ export default function EnhancedAdmin() {
     }
 
     try {
+      console.log('🔄 Creating user with form data:', userForm)
+      
       // Call Supabase Edge Function for real user creation
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
   body: {
@@ -416,6 +418,8 @@ export default function EnhancedAdmin() {
     Authorization: `Bearer ${supabase.supabaseKey}`,
   }
 })
+      
+      console.log('📞 Edge Function response:', { data, error })
 
       if (error) {
         console.error('Edge Function error details:', {

@@ -19,6 +19,15 @@ serve(async (req) => {
     
     const { email, role, company_name, contact_email, phone, address } = body;
     
+    console.log("📋 Parsed request data:", {
+      email,
+      role,
+      company_name,
+      contact_email,
+      phone,
+      address
+    });
+    
     if (!email) {
       return new Response(
         JSON.stringify({ error: "Email is required" }),
@@ -48,7 +57,7 @@ serve(async (req) => {
       email_confirm: true,
       user_metadata: { 
         company_name: company_name || "Unknown Company",
-        role: role || "user",
+        role: role || "admin",
         contact_email: contact_email || email,
         phone: phone || "",
         address: address || ""
@@ -81,7 +90,11 @@ serve(async (req) => {
         .from("profiles")
         .insert([{
           user_id: authData.user.id,
-          role: role || "user"
+          role: role || "admin",
+          company_name: company_name || "Unknown Company",
+          contact_email: contact_email || email,
+          phone: phone || null,
+          address: address || null
         }]);
 
       if (profileError) {
