@@ -40,3 +40,6 @@ verify_jwt = false
 
 [functions.agency-create-advertiser]
 verify_jwt = false
+
+[functions.admin-list-users]
+verify_jwt = false
