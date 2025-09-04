@@ -326,10 +326,6 @@ export default function EnhancedAdmin() {
           phone: userForm.phone,
           address: userForm.address
         }
-  ,
-  headers: {
-    Authorization: `Bearer ${supabase.supabaseKey}`,
-  }
       })
 
       if (error) {

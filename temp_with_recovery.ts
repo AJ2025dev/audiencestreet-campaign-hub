@@ -15,9 +15,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    console.log("📊 Request body:", JSON.stringify(body, null, 2));
-    
-    const { email, role, company_name, contact_email, phone, address } = body;
+    const { email, role, company_name } = body;
     
     if (!email) {
       return new Response(
@@ -48,10 +46,7 @@ serve(async (req) => {
       email_confirm: true,
       user_metadata: { 
         company_name: company_name || "Unknown Company",
-        role: role || "user",
-        contact_email: contact_email || email,
-        phone: phone || "",
-        address: address || ""
+        role: role || "user"
       }
     });
 
@@ -93,9 +88,8 @@ serve(async (req) => {
       console.log("Profile creation error (ignored):", profileErr);
     }
 
-    // Send notifications
-    console.log("📧 Sending notifications...");
-    let emailResult = { password_reset_sent: false, error: null };
+    // Send password reset email (with delay to avoid rate limiting)
+    console.log("📧 Sending password reset email...");
     
     try {
       // Wait 1 second to avoid rate limiting
@@ -111,33 +105,49 @@ serve(async (req) => {
 
       if (resetError) {
         console.error("Password reset email failed:", resetError);
-        emailResult = { password_reset_sent: false, error: resetError.message };
-      } else {
-        console.log("✅ Password reset email sent successfully");
-        emailResult = { password_reset_sent: true, error: null };
+        // Don't fail the request if email fails
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "User created successfully! (Password reset email failed - user can request it manually)",
+            user_id: authData.user.id,
+            email: authData.user.email,
+            email_sent: false,
+            email_error: resetError.message
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
+
+      console.log("✅ Password reset email sent successfully");
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "User created successfully! Password reset email sent.",
+          user_id: authData.user.id,
+          email: authData.user.email,
+          email_sent: true,
+          note: "User will receive an email to set their password"
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
     } catch (emailError) {
       console.error("Email sending error:", emailError);
-      emailResult = { password_reset_sent: false, error: emailError.message };
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "User created successfully! (Email sending failed)",
+          user_id: authData.user.id,
+          email: authData.user.email,
+          email_sent: false,
+          note: "User can request password reset manually"
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: emailResult.password_reset_sent 
-          ? "User created successfully! Password reset email sent."
-          : "User created successfully! (Password reset email failed - user can request it manually)",
-        user_id: authData.user.id,
-        email: authData.user.email,
-        company_name: company_name,
-        role: role,
-        email_results: emailResult,
-        note: emailResult.password_reset_sent 
-          ? "User will receive an email to set their password"
-          : "User can request password reset manually from the login page"
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
 
   } catch (error) {
     console.error("💥 Unexpected error:", error);
