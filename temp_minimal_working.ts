@@ -10,48 +10,55 @@ serve(async (req) => {
   console.log("🚀 Function started, method:", req.method);
   
   if (req.method === "OPTIONS") {
+    console.log("✅ CORS preflight handled");
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    console.log("📨 Parsing request body...");
     const body = await req.json();
     console.log("📊 Request body:", JSON.stringify(body, null, 2));
     
-    const { email, role, company_name, contact_email, phone, address } = body;
+    const { email, role, company_name } = body;
+    
+    console.log("🔍 Extracted fields:", { email, role, company_name });
     
     if (!email) {
+      console.log("❌ Missing email");
       return new Response(
         JSON.stringify({ error: "Email is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log("🔑 Getting service role key...");
     const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!serviceRoleKey) {
+      console.log("❌ No service role key found");
       return new Response(
         JSON.stringify({ error: "Service role key not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    console.log("✅ Service role key found, length:", serviceRoleKey.length);
 
+    console.log("🔧 Creating Supabase client...");
     const supabaseAdmin = createClient("https://uzcmjulbpmeythxfusrm.supabase.co", serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
     console.log("👤 Creating user with email:", email);
     
-    // Create user
+    // Simple user creation - just email and password
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: "TempPassword123!",
       email_confirm: true,
       user_metadata: { 
         company_name: company_name || "Unknown Company",
-        role: role || "user",
-        contact_email: contact_email || email,
-        phone: phone || "",
-        address: address || ""
+        role: role || "user"
       }
     });
 
@@ -60,81 +67,40 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Failed to create user", 
-          details: authError.message
+          details: authError.message,
+          code: authError.code,
+          debug: "Auth user creation failed"
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!authData?.user) {
+      console.log("❌ No user data returned");
       return new Response(
-        JSON.stringify({ error: "No user data returned" }),
+        JSON.stringify({ 
+          error: "No user data returned",
+          debug: "Auth creation succeeded but no user object returned"
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("✅ User created successfully:", authData.user.id);
+    console.log("✅ SUCCESS! User created:", authData.user.id);
 
-    // Try to create profile (optional)
-    try {
-      const { error: profileError } = await supabaseAdmin
-        .from("profiles")
-        .insert([{
-          user_id: authData.user.id,
-          role: role || "user"
-        }]);
-
-      if (profileError) {
-        console.log("Profile creation failed (non-blocking):", profileError.message);
-      } else {
-        console.log("✅ Profile created successfully");
-      }
-    } catch (profileErr) {
-      console.log("Profile creation error (ignored):", profileErr);
-    }
-
-    // Send notifications
-    console.log("📧 Sending notifications...");
-    let emailResult = { password_reset_sent: false, error: null };
-    
-    try {
-      // Wait 1 second to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: "recovery",
-        email: email,
-        options: {
-          redirectTo: "https://aj2025dev.github.io/audiencestreet-campaign-hub/reset-password"
-        }
-      });
-
-      if (resetError) {
-        console.error("Password reset email failed:", resetError);
-        emailResult = { password_reset_sent: false, error: resetError.message };
-      } else {
-        console.log("✅ Password reset email sent successfully");
-        emailResult = { password_reset_sent: true, error: null };
-      }
-    } catch (emailError) {
-      console.error("Email sending error:", emailError);
-      emailResult = { password_reset_sent: false, error: emailError.message };
-    }
-
+    // Return success immediately - no profile creation, no emails
     return new Response(
       JSON.stringify({
         success: true,
-        message: emailResult.password_reset_sent 
-          ? "User created successfully! Password reset email sent."
-          : "User created successfully! (Password reset email failed - user can request it manually)",
+        message: "User created successfully!",
         user_id: authData.user.id,
         email: authData.user.email,
-        company_name: company_name,
-        role: role,
-        email_results: emailResult,
-        note: emailResult.password_reset_sent 
-          ? "User will receive an email to set their password"
-          : "User can request password reset manually from the login page"
+        debug: {
+          created_at: authData.user.created_at,
+          email_confirmed_at: authData.user.email_confirmed_at,
+          role: role,
+          company_name: company_name
+        }
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -144,7 +110,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: "Internal server error", 
-        details: error.message
+        details: error.message,
+        stack: error.stack,
+        debug: "Caught in try/catch block"
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
