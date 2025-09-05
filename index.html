@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>audiencestreet-campaign-hub</title>
-    <link rel="icon" href="/lovable-uploads/48bf5489-7d22-4a27-a327-3f00f342765d.png" type="image/png">
+    <link rel="icon" href="/audiencestreet-campaign-hub/lovable-uploads/48bf5489-7d22-4a27-a327-3f00f342765d.png" type="image/png">
     <meta name="description" content="Lovable Generated Project" />
     <meta name="author" content="Lovable" />
 
@@ -21,18 +21,22 @@
     <script type="text/javascript">
       // This script handles URL redirects for GitHub Pages SPA routing
       (function(l) {
-        if (l.search[1] === '/' ) {
-          var decoded = l.search.slice(1).split('&').map(function(s) { 
-            return s.replace(/~and~/g, '&')
-          }).join('?');
-          window.history.replaceState(null, null,
-              l.pathname.slice(0, -1) + decoded + l.hash
-          );
+        try {
+          if (l.search && l.search[1] === '/' ) {
+            var decoded = l.search.slice(1).split('&').map(function(s) { 
+              return s.replace(/~and~/g, '&')
+            }).join('?');
+            window.history.replaceState(null, null,
+                l.pathname.slice(0, -1) + decoded + l.hash
+            );
+          }
+        } catch (e) {
+          console.log('GitHub Pages routing script error (non-blocking):', e);
         }
       }(window.location))
     </script>
-    <script type="module" crossorigin src="/assets/index-BmCBQSr1.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-D8G17Evu.css">
+    <script type="module" crossorigin src="/audiencestreet-campaign-hub/assets/index-CkCFS8T2.js"></script>
+    <link rel="stylesheet" crossorigin href="/audiencestreet-campaign-hub/assets/index-D8G17Evu.css">
   </head>
 
   <body>
