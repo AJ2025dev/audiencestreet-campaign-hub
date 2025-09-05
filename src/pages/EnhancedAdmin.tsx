@@ -595,6 +595,67 @@ export default function EnhancedAdmin() {
     })
   }
 
+  const fixUserRoles = async (action: 'preview' | 'execute' = 'preview') => {
+    try {
+      toast({
+        title: action === 'preview' ? "Checking Users" : "Updating Roles",
+        description: action === 'preview' ? "Scanning for users with incorrect roles..." : "Updating user roles to admin...",
+      })
+
+      const { data, error } = await supabase.functions.invoke('fix-user-roles', {
+        body: { action, new_role: 'admin' },
+        headers: {
+          Authorization: `Bearer ${supabase.supabaseKey}`,
+        }
+      })
+
+      if (error) {
+        console.error('Fix user roles error:', error)
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fix user roles",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (data?.success) {
+        if (action === 'preview') {
+          const usersToFix = data.users_to_fix || 0
+          if (usersToFix > 0) {
+            toast({
+              title: `${usersToFix} Users Need Fixing`,
+              description: `Found ${usersToFix} users with non-admin roles. Click 'Fix All User Roles' to update them.`,
+              variant: "destructive",
+            })
+            console.log('Users to fix:', data.users)
+          } else {
+            toast({
+              title: "All Users Correct",
+              description: "All users already have admin roles. No changes needed.",
+            })
+          }
+        } else {
+          const successful = data.successful_updates || 0
+          const failed = data.failed_updates || 0
+          await fetchUsers() // Refresh the user list
+          toast({
+            title: "Roles Updated",
+            description: `Successfully updated ${successful} users to admin role. ${failed > 0 ? `${failed} failed.` : ''}`,
+          })
+          console.log('Update results:', data.results)
+        }
+      }
+    } catch (error: any) {
+      console.error('Fix user roles error:', error)
+      toast({
+        title: "Error", 
+        description: error.message || "Failed to fix user roles",
+        variant: "destructive",
+      })
+    }
+  }
+
   const sendWelcomeEmail = async (email: string) => {
     try {
       toast({
@@ -978,10 +1039,24 @@ export default function EnhancedAdmin() {
                     <Users className="h-5 w-5" />
                     User Management ({users.length} total)
                   </CardTitle>
-                  <Button onClick={() => setIsUserDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add User
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setIsUserDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add User
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => fixUserRoles('preview')}
+                    >
+                      🔍 Check Roles
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => fixUserRoles('execute')}
+                    >
+                      🔧 Fix All User Roles
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

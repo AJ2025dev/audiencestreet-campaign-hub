@@ -37,3 +37,6 @@ verify_jwt = false
 
 [functions.send-welcome-email]
 verify_jwt = false
+
+[functions.fix-user-roles]
+verify_jwt = false

@@ -58,7 +58,7 @@ serve(async (req) => {
         profiles: profile || {
           id: authUser.id,
           user_id: authUser.id,
-          role: authUser.user_metadata?.role || 'user',
+          role: authUser.user_metadata?.role || 'admin',
           company_name: authUser.user_metadata?.company_name || 'Unknown Company',
           contact_email: authUser.user_metadata?.contact_email || authUser.email,
           phone: authUser.user_metadata?.phone || '',
