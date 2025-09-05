@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
+
+// Supabase publishable key for Edge Function authentication
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6Y21qdWxicG1leXRoeGZ1c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNDQ0MDIsImV4cCI6MjA2OTgyMDQwMn0.1dj4G_WkA4c5pjD4HHi_s4UKWUvCUR1UAM5nMg8X5-U"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -197,7 +200,7 @@ export default function EnhancedAdmin() {
       const { data, error } = await supabase.functions.invoke('admin-list-users', {
   body: {},
   headers: {
-    Authorization: `Bearer ${supabase.supabaseKey}`,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
   }
 })
       if (error) {
@@ -415,7 +418,7 @@ export default function EnhancedAdmin() {
     address: userForm.address
   },
   headers: {
-    Authorization: `Bearer ${supabase.supabaseKey}`,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
   }
 })
       
@@ -605,7 +608,7 @@ export default function EnhancedAdmin() {
       const { data, error } = await supabase.functions.invoke('fix-user-roles', {
         body: { action, new_role: 'admin' },
         headers: {
-          Authorization: `Bearer ${supabase.supabaseKey}`,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         }
       })
 
@@ -666,7 +669,7 @@ export default function EnhancedAdmin() {
       const { data, error } = await supabase.functions.invoke('send-welcome-email', {
         body: { email },
         headers: {
-          Authorization: `Bearer ${supabase.supabaseKey}`,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         }
       })
 
