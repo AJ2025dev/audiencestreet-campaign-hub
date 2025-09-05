@@ -4,57 +4,59 @@
     <meta charset="utf-8">
     <title>AudienceStreet Campaign Hub</title>
     <script type="text/javascript">
-      // Single Page Apps for GitHub Pages
-      // MIT License
-      // https://github.com/rafgraph/spa-github-pages
-      // This script takes the current url and converts the path and query
-      // string into just a query string, and then redirects the browser
-      // to the new url with only a query string and hash fragment,
-      // e.g. https://www.foo.tld/one/two?a=b&c=d#qwe becomes
-      // https://www.foo.tld/?/one/two&a=b~and~c=d#qwe
-      // Note: this 404.html file must be at least 512 bytes for it to work
-      // with Internet Explorer (it is currently > 512 bytes)
-
-      // If you're creating a Project Pages site and NOT using a custom domain,
-      // then set pathSegmentsToKeep to 1 (enterprise users may need to set it to > 1).
-      // This way the code will only replace the route part and not the real directory.
-      // This script should be place in your index.html file.
-
-      // IMPORTANT: You must also add the following script tag to the head of your index.html file.
-      // You can add it directly after this comment block:
-      // <script type="text/javascript">
-      //   (function(l) {
-      //     if (l.search[1] === '/' ) {
-      //       var decoded = l.search.slice(1).split('&').map(function(s) { 
-      //         return s.replace(/~and~/g, '&')
-      //       }).join('?');
-      //       window.history.replaceState(null, null,
-      //           l.pathname.slice(0, -1) + decoded + l.hash
-      //       );
-      //     }
-      //   }(window.location))
-      // </script>
-
-      var pathSegmentsToKeep = 1;
-
+      // Simple GitHub Pages SPA routing for audiencestreet-campaign-hub
+      // This handles 404s by redirecting to the main app with the path encoded
+      
       var l = window.location;
       
-      // Only redirect if we're on GitHub Pages and not already redirected
-      if (l.hostname.includes('github.io') && !l.search.includes('/?/')) {
-        l.replace(
-          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-          l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-          l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-          l.hash
-        );
+      // Check if we're on GitHub Pages
+      if (l.hostname.includes('github.io')) {
+        var path = l.pathname;
+        
+        // If we're not already on the main app page and not already redirected
+        if (!path.includes('/?/') && path !== '/audiencestreet-campaign-hub/' && path !== '/audiencestreet-campaign-hub/index.html') {
+          
+          // Extract the path after /audiencestreet-campaign-hub/
+          var appPath = '';
+          if (path.startsWith('/audiencestreet-campaign-hub/')) {
+            appPath = path.substring('/audiencestreet-campaign-hub/'.length);
+          }
+          
+          // Create the redirect URL with the SPA routing format
+          var redirectUrl = l.protocol + '//' + l.hostname + '/audiencestreet-campaign-hub/';
+          
+          if (appPath && appPath !== '') {
+            redirectUrl += '?/' + appPath.replace(/&/g, '~and~');
+            if (l.search) {
+              redirectUrl += '&' + l.search.slice(1).replace(/&/g, '~and~');
+            }
+          } else if (l.search) {
+            redirectUrl += '?' + l.search.slice(1);
+          }
+          
+          if (l.hash) {
+            redirectUrl += l.hash;
+          }
+          
+          // Redirect to the main app
+          window.location.replace(redirectUrl);
+        }
       } else {
-        // Fallback: redirect to home page
-        window.location.href = '/audiencestreet-campaign-hub/';
+        // Not on GitHub Pages - redirect to the main app
+        window.location.href = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/audiencestreet-campaign-hub/';
       }
+      
+      // If no redirect happened, show a fallback message
+      setTimeout(function() {
+        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h1>Redirecting to AudienceStreet Campaign Hub...</h1><p>If you are not redirected automatically, <a href="/audiencestreet-campaign-hub/">click here</a>.</p></div>';
+      }, 1000);
 
     </script>
   </head>
   <body>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+      <h1>Loading AudienceStreet Campaign Hub...</h1>
+      <p>Please wait while we redirect you to the application.</p>
+    </div>
   </body>
 </html>
